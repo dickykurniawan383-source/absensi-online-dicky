@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="id">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Absensi Online Fleksibel</title>
+    <!-- Impor Tailwind CSS untuk styling modern -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Impor Google Fonts 'Inter' untuk tampilan yang bersih -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Impor ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Latar belakang baru dengan pola geometris */
+        .main-background { 
+            background-color: #f0f4ff;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23a5b4fc' fill-opacity='0.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .success-animation { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); z-index: 9999; justify-content: center; align-items: center; }
+        .checkmark__circle { stroke-dasharray: 166; stroke-dashoffset: 166; stroke-width: 2; stroke-miterlimit: 10; stroke: #4CAF50; fill: none; animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards; }
+        .checkmark { width: 100px; height: 100px; border-radius: 50%; display: block; stroke-width: 3; stroke: #fff; stroke-miterlimit: 10; margin: 10% auto; box-shadow: inset 0px 0px 0px #4CAF50; animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both; }
+        .checkmark__check { transform-origin: 50% 50%; stroke-dasharray: 48; stroke-dashoffset: 48; animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards; }
+        @keyframes stroke { 100% { stroke-dashoffset: 0; } }
+        @keyframes scale { 0%, 100% { transform: none; } 50% { transform: scale3d(1.1, 1.1, 1); } }
+        @keyframes fill { 100% { box-shadow: inset 0px 0px 0px 60px #4CAF50; } }
+        .tab-active { border-bottom-color: #4f46e5; color: #4f46e5; font-weight: 700; }
+        .modal { display: none; }
+        .role-card { transition: all 0.3s ease-in-out; }
+        .role-card:hover { transform: translateY(-8px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); }
+        .btn-gradient { background-image: linear-gradient(to right, #4f46e5, #7c3aed); transition: all 0.3s ease-in-out; }
+        .btn-gradient:hover { box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4), 0 4px 6px -2px rgba(124, 58, 237, 0.4); }
+        .btn-gradient-green { background-image: linear-gradient(to right, #10b981, #34d399); }
+        .btn-gradient-green:hover { box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4); }
+        .btn-gradient-yellow { background-image: linear-gradient(to right, #f59e0b, #facc15); }
+        .btn-gradient-yellow:hover { box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.4); }
+    </style>
+</head>
+<body class="flex min-h-screen main-background">
+
+    <!-- Sidebar Bahasa -->
+    <aside class="w-20 md:w-48 bg-white/80 backdrop-blur-sm shadow-lg p-4 flex flex-col items-center md:items-start rounded-r-2xl">
+        <h2 class="text-lg font-bold hidden md:block text-indigo-600" data-lang-key="languageTitle">Bahasa</h2>
+        <div class="mt-4 space-y-2 w-full">
+            <button id="lang-id" class="w-full flex items-center justify-center md:justify-start p-2 rounded-lg bg-indigo-100">
+                <img src="https://placehold.co/24x24/FF0000/FFFFFF?text=ID" alt="Bendera Indonesia" class="rounded-full">
+                <span class="ml-3 hidden md:inline text-indigo-700 font-semibold">Indonesia</span>
+            </button>
+            <button id="lang-en" class="w-full flex items-center justify-center md:justify-start p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                <img src="https://placehold.co/24x24/0000FF/FFFFFF?text=EN" alt="Bendera Inggris" class="rounded-full">
+                <span class="ml-3 hidden md:inline">English</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Konten Utama -->
+    <main class="flex-1 p-4 md:p-8 overflow-y-auto">
+        <div class="max-w-4xl mx-auto">
+            
+            <!-- Layar Pemilihan Sekolah -->
+            <div id="school-selection-screen" class="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl text-center">
+                <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800 mb-4" data-lang-key="schoolSelectTitle">Selamat Datang!</h1>
+                <p class="text-gray-600 mb-6" data-lang-key="schoolSelectSubtitle">Masukkan nama sekolah Anda untuk memulai.</p>
+                <div class="max-w-sm mx-auto">
+                    <input type="text" id="school-name-input" class="w-full px-4 py-3 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Contoh: SMAN 1 Bogor">
+                    <button id="continue-to-app-btn" class="mt-4 w-full text-white font-bold py-3 px-6 rounded-lg btn-gradient">Lanjutkan</button>
+                </div>
+            </div>
+
+            <!-- Halaman Panduan -->
+            <div id="how-to-use" class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl transition-opacity duration-500 hidden p-8">
+                <div class="text-center mb-8">
+                     <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800" data-lang-key="howToTitle">Cara Menggunakan Aplikasi</h1>
+                </div>
+                <div class="space-y-6 text-gray-700">
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0 bg-indigo-100 text-indigo-600 rounded-full h-10 w-10 flex items-center justify-center font-bold text-lg">1</div>
+                        <div>
+                            <h3 class="font-bold text-lg" data-lang-key="howToStep1Title">Absen Wajib Foto</h3>
+                            <p class="text-gray-600" data-lang-key="howToStep1Desc">Semua absensi 'Hadir' (Siswa & Guru) wajib menyertakan foto selfie sebagai bukti. Absen tepat waktu (&le; 07:00) akan memberikan siswa +1 Poin.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0 bg-indigo-100 text-indigo-600 rounded-full h-10 w-10 flex items-center justify-center font-bold text-lg">2</div>
+                        <div>
+                            <h3 class="font-bold text-lg" data-lang-key="howToStep2Title">Nama Fleksibel</h3>
+                            <p class="text-gray-600" data-lang-key="howToStep2Desc">Anda tidak perlu terikat daftar nama. Cukup ketik nama siapa saja yang ingin diabsen. Aplikasi akan mencatatnya secara otomatis.</p>
+                        </div>
+                    </div>
+                     <div class="flex items-start gap-4">
+                         <div class="flex-shrink-0 bg-indigo-100 text-indigo-600 rounded-full h-10 w-10 flex items-center justify-center font-bold text-lg">3</div>
+                        <div>
+                            <h3 class="font-bold text-lg" data-lang-key="howToStep3Title">Dasbor Admin</h3>
+                            <p class="text-gray-600" data-lang-key="howToStep3Desc">Admin dapat melihat rekap absensi, poin, dan foto bukti dari semua pengguna yang sudah melakukan absensi.</p>
+                        </div>
+                    </div>
+                </div>
+                <button id="start-btn" class="mt-10 w-full text-white font-bold py-3 px-6 rounded-lg btn-gradient" data-lang-key="startButton">OK, Saya Mengerti!</button>
+            </div>
+
+            <!-- Bagian Utama Aplikasi -->
+            <div id="app-content" class="hidden transition-opacity duration-500">
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800" data-lang-key="appTitle">Aplikasi Absensi Online</h1>
+                    <p id="school-name-display" class="font-semibold text-xl mt-2 text-indigo-600"></p>
+                </div>
+                
+                <!-- Pilihan Peran -->
+                <div id="role-selection" class="relative">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <button id="student-role-btn" class="role-card p-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg text-center"><span class="text-5xl">👨‍🎓</span><h2 class="text-2xl font-bold text-gray-800 mt-4" data-lang-key="studentRole">Saya Siswa</h2></button>
+                        <button id="teacher-role-btn" class="role-card p-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg text-center"><span class="text-5xl">👩‍🏫</span><h2 class="text-2xl font-bold text-gray-800 mt-4" data-lang-key="teacherRole">Saya Guru</h2></button>
+                        <button id="admin-role-btn" class="role-card p-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg text-center"><span class="text-5xl">🛡️</span><h2 class="text-2xl font-bold text-gray-800 mt-4" data-lang-key="adminRole">Saya Admin</h2></button>
+                    </div>
+                </div>
+
+                <!-- Form Absensi -->
+                <div id="attendance-form-container" class="hidden mt-8">
+                    <button id="back-to-role" class="mb-4 text-indigo-600 hover:underline font-semibold" data-lang-key="backButton">← Kembali</button>
+                    <div class="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl">
+                        <h2 id="form-title" class="text-2xl font-bold text-gray-800 text-center mb-6">Form Absensi</h2>
+                        <form id="attendance-form" onsubmit="return false;">
+                            <div class="mb-4">
+                                <label for="name" class="block text-gray-700 font-medium mb-2" data-lang-key="nameLabel">Nama Lengkap</label>
+                                <input type="text" id="name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" data-lang-key="namePlaceholder" placeholder="Ketik nama Anda di sini..." required>
+                            </div>
+                            <div id="class-input-group" class="mb-4 hidden">
+                                <label for="class-select" class="block text-gray-700 font-medium mb-2" data-lang-key="classLabel">Kelas</label>
+                                <select id="class-select" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <!-- Daftar kelas akan dibuat oleh JavaScript -->
+                                </select>
+                            </div>
+                            
+                            <div id="proof-options" class="mb-4 hidden">
+                                <label class="block text-gray-700 font-medium mb-2" data-lang-key="proofLabel">Bukti Kehadiran (Wajib Foto)</label>
+                                <button type="button" id="use-photo-btn" class="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:bg-gray-100 font-semibold transition-colors">
+                                    <i class="fas fa-camera"></i> <span data-lang-key="usePhoto">Unggah Foto Selfie</span>
+                                </button>
+                                <input type="file" id="photo-input" class="hidden" accept="image/*" capture="user">
+                                <div id="proof-info" class="mt-3 p-3 bg-gray-100 rounded-lg text-sm text-gray-600 hidden"></div>
+                                <img id="photo-preview" class="mt-3 rounded-lg max-h-48 mx-auto hidden" />
+                                <p id="proof-helper" class="text-xs text-center text-gray-500 mt-2" data-lang-key="proofHelper">Unggah foto untuk mengaktifkan tombol Hadir.</p>
+                            </div>
+                            
+                            <!-- Input Password dengan Tombol Show/Hide -->
+                            <div id="password-input-group" class="mb-4 hidden">
+                                <label for="password" class="block text-gray-700 font-medium mb-2" data-lang-key="passwordLabel">Password</label>
+                                <div class="relative">
+                                    <input type="password" id="password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Masukkan password admin...">
+                                    <button type="button" id="toggle-password-btn" class="absolute inset-y-0 right-0 flex items-center px-4 text-gray-600">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div id="action-buttons" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                               <button type="button" id="present-btn" class="w-full text-white font-bold py-3 px-6 rounded-lg btn-gradient-green disabled:bg-gray-400 disabled:bg-none" data-lang-key="presentButton">Hadir</button>
+                               <button type="button" id="permission-btn" class="w-full text-white font-bold py-3 px-6 rounded-lg btn-gradient-yellow" data-lang-key="permissionButton">Izin</button>
+                            </div>
+                             <div id="admin-login-button" class="hidden mt-6">
+                                <button type="button" id="login-btn" class="w-full text-white font-bold py-3 px-6 rounded-lg btn-gradient" data-lang-key="loginButton">Login</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Hasil Absensi -->
+                <div id="attendance-result" class="hidden mt-8">
+                     <button id="back-to-menu-btn" class="mb-4 text-indigo-600 hover:underline font-semibold" data-lang-key="backToMenu">← Kembali ke Menu Utama</button>
+                    <div id="user-result" class="hidden bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl">
+                        <h2 id="user-result-title" class="text-2xl font-bold text-gray-800 mb-4">Status Kehadiran Anda</h2>
+                        <div id="user-status" class="text-lg"></div>
+                    </div>
+                    <div id="admin-dashboard" class="hidden bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl">
+                        <div class="p-8"><h2 class="text-2xl font-bold text-gray-800 mb-2" data-lang-key="adminDashboardTitle">Dasbor Absensi Admin</h2><p id="admin-status" class="mb-6 text-gray-600"></p><div class="border-b border-gray-200"><nav class="-mb-px flex space-x-8" aria-label="Tabs"><button id="tab-students" class="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm tab-active" data-lang-key="studentTab">Absensi Siswa</button><button id="tab-teachers" class="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-lang-key="teacherTab">Absensi Guru</button></nav></div></div>
+                        <div class="p-8 pt-0"><div id="students-content"><ul id="student-list" class="space-y-3"></ul></div><div id="teachers-content" class="hidden"><ul id="teacher-list" class="space-y-3"></ul></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Modal Alasan Izin -->
+    <div id="reason-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-50 h-full w-full z-50 flex justify-center items-center"><div class="relative mx-auto p-8 border w-full max-w-md shadow-lg rounded-2xl bg-white"><h3 class="text-2xl font-bold text-gray-800 text-center" data-lang-key="reasonTitle">Masukkan Alasan Izin</h3><div class="mt-4 px-7 py-3"><textarea id="reason-textarea" class="w-full h-24 px-3 py-2 text-base text-gray-700 placeholder-gray-600 border rounded-lg focus:shadow-outline" data-lang-key="reasonPlaceholder" placeholder="Tuliskan alasan Anda di sini..."></textarea></div><div class="items-center px-4 py-3 gap-4 flex"><button id="cancel-reason-btn" class="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-semibold">Batal</button><button id="submit-reason-btn" class="w-full px-4 py-2 text-white rounded-lg font-semibold btn-gradient">Kirim</button></div></div></div>
+    
+    <!-- Modal Preview Foto -->
+    <div id="photo-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 h-full w-full z-50 flex justify-center items-center p-4"><div class="relative bg-white p-4 rounded-xl max-w-3xl max-h-full"><button id="close-photo-modal" class="absolute -top-3 -right-3 bg-white rounded-full h-8 w-8 text-xl text-gray-700">&times;</button><img id="full-photo-preview" src="" class="max-w-full max-h-[85vh] object-contain"></div></div>
+
+    <!-- Animasi Sukses -->
+    <div id="success-animation" class="success-animation"><div class="bg-white p-6 rounded-lg text-center"><svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52"><circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/><path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/></svg><p id="success-message" class="text-xl font-semibold mt-4 text-gray-700"></p></div></div>
+    
+    <!-- Notifikasi Error -->
+    <div id="custom-alert" class="fixed top-8 right-8 z-50 bg-red-600 text-white py-3 px-6 rounded-xl shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none"><p id="custom-alert-message"></p></div>
+
+    <script>
+        // --- DATA (FLEKSIBEL, TANPA MASTER LIST) ---
+        let studentAttendance = [];
+        let teacherAttendance = [];
+        let studentPoints = {};
+        let currentUserRole = null;
+        let currentAttendanceProof = null;
+        const ADMIN_PASSWORD = 'admin123';
+
+        // --- Teks Multi-Bahasa ---
+        const translations = {
+            id: {
+                languageTitle: "Bahasa",
+                schoolSelectTitle: "Selamat Datang!",
+                schoolSelectSubtitle: "Masukkan nama sekolah Anda untuk memulai.",
+                howToTitle: "Cara Menggunakan Aplikasi",
+                howToStep1Title: "Absen Wajib Foto",
+                howToStep1Desc: "Semua absensi 'Hadir' (Siswa & Guru) wajib menyertakan foto selfie sebagai bukti. Absen tepat waktu (\u2264 07:00) akan memberikan siswa +1 Poin.",
+                howToStep2Title: "Nama Fleksibel",
+                howToStep2Desc: "Anda tidak perlu terikat daftar nama. Cukup ketik nama siapa saja yang ingin diabsen. Aplikasi akan mencatatnya secara otomatis.",
+                howToStep3Title: "Dasbor Admin",
+                howToStep3Desc: "Admin dapat melihat rekap absensi, poin, dan foto bukti dari semua pengguna yang sudah melakukan absensi.",
+                startButton: "OK, Saya Mengerti!", appTitle: "Aplikasi Absensi Online",
+                teacherRole: "Saya Guru", studentRole: "Saya Siswa", adminRole: "Saya Admin",
+                backButton: "← Kembali", backToMenu: "← Kembali ke Menu Utama", nameLabel: "Nama Lengkap", namePlaceholder: "Ketik nama Anda di sini...", classLabel: "Kelas", passwordLabel: "Password",
+                presentButton: "Hadir", permissionButton: "Izin", loginButton: "Login",
+                formTitleStudent: "Form Absensi Siswa", formTitleTeacher: "Form Absensi Guru", formTitleAdmin: "Form Login Admin",
+                userResultTitle: "Status Kehadiran Anda", adminDashboardTitle: "Dasbor Absensi Admin",
+                studentTab: "Absensi Siswa", teacherTab: "Absensi Guru",
+                attendanceSuccess: "Absensi Berhasil!", permissionSuccess: "Izin Telah Dicatat!",
+                nameRequired: "Nama tidak boleh kosong.", wrongPassword: "Password salah! Silakan coba lagi.", alreadyPresent: "Nama ini sudah melakukan absensi hari ini.",
+                proofLabel: "Bukti Kehadiran (Wajib Foto)", usePhoto: "Unggah Foto Selfie", noProof: "Harap unggah foto selfie sebagai bukti.", proofHelper: "Unggah foto untuk mengaktifkan tombol Hadir.",
+                reasonTitle: "Masukkan Alasan Izin", reasonPlaceholder: "Tuliskan alasan Anda di sini...", cancelButton: "Batal", submitButton: "Kirim", reasonRequired: "Alasan tidak boleh kosong.",
+                onTime: "Tepat Waktu", late: "Terlambat", permissionStatus: "Izin", pointsLabel: "Poin",
+                statusPresentStudent: (name, time, className, attStatus) => `<strong>${name}</strong> dari kelas <strong>${className}</strong>, Anda berhasil absen pukul <strong>${time}</strong> (<strong>${attStatus}</strong>).`,
+                statusPresentTeacher: (name, time, attStatus) => `Terima kasih, <strong>${name}</strong>. Anda berhasil absen pukul <strong>${time}</strong> (<strong>${attStatus}</strong>).`,
+                statusPermission: (name, time, reason) => `Izin Anda (<strong>${name}</strong>) dicatat pukul <strong>${time}</strong>. Alasan: "${reason}".`,
+                adminStatus: (name, time) => `Selamat datang, Admin <strong>${name}</strong>. Login pukul <strong>${time}</strong>.`,
+                photoSuccess: `<i class="fas fa-check-circle text-green-500"></i> Foto berhasil dimuat. Siap untuk absen.`,
+                schoolNameRequired: "Nama sekolah tidak boleh kosong!"
+            },
+            en: {
+                languageTitle: "Language",
+                schoolSelectTitle: "Welcome!",
+                schoolSelectSubtitle: "Enter your school name to begin.",
+                howToTitle: "How to Use",
+                howToStep1Title: "Photo Proof is Mandatory",
+                howToStep1Desc: "All 'Present' attendances (Student & Teacher) require a selfie photo as proof. On-time attendance (\u2264 07:00 AM) gives students +1 Point.",
+                howToStep2Title: "Flexible Names",
+                howToStep2Desc: "You are not tied to a predefined name list. Just type any name you want to record for attendance.",
+                howToStep3Title: "Admin Dashboard",
+                howToStep3Desc: "Admins can see a recap of attendance, points, and photo proofs for all users who have checked in.",
+                startButton: "OK, I Understand!", appTitle: "Online Attendance App",
+                teacherRole: "I am a Teacher", studentRole: "I am a Student", adminRole: "I am an Admin",
+                backButton: "← Back", backToMenu: "← Back to Main Menu", nameLabel: "Full Name", namePlaceholder: "Type your name here...", classLabel: "Class", passwordLabel: "Password",
+                presentButton: "Present", permissionButton: "Permission", loginButton: "Login",
+                formTitleStudent: "Student Attendance Form", formTitleTeacher: "Teacher Attendance Form", formTitleAdmin: "Admin Login Form",
+                userResultTitle: "Your Attendance Status", adminDashboardTitle: "Admin Attendance Dashboard",
+                studentTab: "Student Attendance", teacherTab: "Teacher Attendance",
+                attendanceSuccess: "Attendance Successful!", permissionSuccess: "Permission Recorded!",
+                nameRequired: "Name cannot be empty.", wrongPassword: "Wrong password! Please try again.", alreadyPresent: "This name has already marked attendance today.",
+                proofLabel: "Attendance Proof (Photo Required)", usePhoto: "Upload Selfie Photo", noProof: "Please upload a selfie photo as proof.", proofHelper: "Upload a photo to enable the Present button.",
+                reasonTitle: "Enter Reason for Permission", reasonPlaceholder: "Write your reason here...", cancelButton: "Cancel", submitButton: "Submit", reasonRequired: "Reason cannot be empty.",
+                onTime: "On Time", late: "Late", permissionStatus: "Permission", pointsLabel: "Points",
+                statusPresentStudent: (name, time, className, attStatus) => `<strong>${name}</strong> from class <strong>${className}</strong>, you've checked in at <strong>${time}</strong> (<strong>${attStatus}</strong>).`,
+                statusPresentTeacher: (name, time, attStatus) => `Thank you, <strong>${name}</strong>. You've checked in at <strong>${time}</strong> (<strong>${attStatus}</strong>).`,
+                statusPermission: (name, time, reason) => `Your permission (<strong>${name}</strong>) was recorded at <strong>${time}</strong>. Reason: "${reason}".`,
+                adminStatus: (name, time) => `Welcome, Admin <strong>${name}</strong>. Logged in at <strong>${time}</strong>.`,
+                photoSuccess: `<i class="fas fa-check-circle text-green-500"></i> Photo loaded successfully. Ready to check in.`,
+                schoolNameRequired: "School name cannot be empty!"
+            }
+        };
+
+        // --- ELEMEN DOM ---
+        const schoolSelectionScreen = document.getElementById('school-selection-screen'), schoolNameInput = document.getElementById('school-name-input'), continueToAppBtn = document.getElementById('continue-to-app-btn'), schoolNameDisplay = document.getElementById('school-name-display');
+        const langIdBtn = document.getElementById('lang-id'), langEnBtn = document.getElementById('lang-en');
+        const howToUseSection = document.getElementById('how-to-use'), startBtn = document.getElementById('start-btn');
+        const appContent = document.getElementById('app-content'), roleSelection = document.getElementById('role-selection');
+        const studentRoleBtn = document.getElementById('student-role-btn'), teacherRoleBtn = document.getElementById('teacher-role-btn'), adminRoleBtn = document.getElementById('admin-role-btn');
+        const attendanceFormContainer = document.getElementById('attendance-form-container'), formTitle = document.getElementById('form-title'), nameInput = document.getElementById('name');
+        const classInputGroup = document.getElementById('class-input-group'), passwordInputGroup = document.getElementById('password-input-group'), passwordInput = document.getElementById('password');
+        const backToRoleBtn = document.getElementById('back-to-role'), backToMenuBtn = document.getElementById('back-to-menu-btn');
+        const presentBtn = document.getElementById('present-btn'), permissionBtn = document.getElementById('permission-btn'), loginBtn = document.getElementById('login-btn');
+        const attendanceResult = document.getElementById('attendance-result'), userResult = document.getElementById('user-result'), userStatus = document.getElementById('user-status');
+        const adminDashboard = document.getElementById('admin-dashboard'), adminStatus = document.getElementById('admin-status');
+        const studentList = document.getElementById('student-list'), teacherList = document.getElementById('teacher-list');
+        const tabStudents = document.getElementById('tab-students'), tabTeachers = document.getElementById('tab-teachers');
+        const studentsContent = document.getElementById('students-content'), teachersContent = document.getElementById('teachers-content');
+        const successAnimation = document.getElementById('success-animation'), successMessage = document.getElementById('success-message');
+        const customAlert = document.getElementById('custom-alert'), customAlertMessage = document.getElementById('custom-alert-message');
+        const reasonModal = document.getElementById('reason-modal'), reasonTextarea = document.getElementById('reason-textarea'), cancelReasonBtn = document.getElementById('cancel-reason-btn'), submitReasonBtn = document.getElementById('submit-reason-btn');
+        const photoModal = document.getElementById('photo-modal'), fullPhotoPreview = document.getElementById('full-photo-preview'), closePhotoModalBtn = document.getElementById('close-photo-modal');
+        const proofOptions = document.getElementById('proof-options'), usePhotoBtn = document.getElementById('use-photo-btn'), photoInput = document.getElementById('photo-input'), proofInfo = document.getElementById('proof-info'), photoPreview = document.getElementById('photo-preview');
+        const togglePasswordBtn = document.getElementById('toggle-password-btn');
+        let alertTimeout;
+        
+        // --- FUNGSI ---
+        function showCustomAlert(message) { clearTimeout(alertTimeout); customAlertMessage.textContent = message; customAlert.classList.remove('opacity-0'); setTimeout(() => { customAlert.classList.add('opacity-0'); }, 3000); }
+        
+        function setLanguage(lang) { 
+            document.documentElement.lang = lang; 
+            const trans = translations[lang]; 
+            document.querySelectorAll('[data-lang-key]').forEach(el => { 
+                const key = el.dataset.langKey;
+                if (trans[key]) el.textContent = trans[key];
+            }); 
+            document.querySelectorAll('input[data-lang-key]').forEach(el => {
+                const key = el.dataset.langKey;
+                if(trans[key]) el.placeholder = trans[key];
+            });
+        }
+        
+        function showSuccessAnimation(message) { successMessage.textContent = message; successAnimation.style.display = 'flex'; setTimeout(() => { successAnimation.style.display = 'none'; }, 2500); }
+
+        function populateClassOptions() {
+            const classSelect = document.getElementById('class-select');
+            classSelect.innerHTML = '';
+            const grades = [10, 11, 12];
+            const letters = 'ABCDEFGHIJKL'.split('');
+
+            grades.forEach(grade => {
+                letters.forEach(letter => {
+                    const option = document.createElement('option');
+                    const className = `Kelas ${grade}-${letter}`;
+                    option.value = className;
+                    option.textContent = className;
+                    classSelect.appendChild(option);
+                });
+            });
+        }
+        
+        function renderAttendanceLists() { 
+            const lang = document.documentElement.lang; const trans = translations[lang]; 
+            studentList.innerHTML = studentAttendance.length === 0 ? `<li class="text-center text-gray-500 p-4">${lang === 'id' ? 'Belum ada data absensi siswa.' : 'No student attendance data yet.'}</li>` : '';
+            studentAttendance.forEach(record => {
+                const li = document.createElement('li'); li.className = 'flex justify-between items-start p-4 rounded-xl';
+                const points = studentPoints[record.name] || 0;
+                let pointsHTML = `<span class="px-2 py-1 text-xs font-bold text-indigo-800 bg-indigo-100 rounded-full">${points} ${trans.pointsLabel}</span>`;
+                let proofHTML = `<img src="${record.proof.data}" class="h-10 w-10 object-cover rounded-md cursor-pointer border" onclick="showFullPhoto('${record.proof.data}')">`;
+                let statusHTML = '';
+                if (record.status === 'Hadir') {
+                    if (record.attendance_status === trans.onTime) { li.classList.add('bg-green-50'); statusHTML = `<span class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full">${trans.onTime}</span>`; }
+                    else { li.classList.add('bg-orange-50'); statusHTML = `<span class="px-2 py-1 text-xs font-semibold text-orange-800 bg-orange-200 rounded-full">${trans.late}</span>`; }
+                    li.innerHTML = `<div><div class="flex items-center gap-2"><span class="font-medium text-gray-800">${record.name}</span>${pointsHTML}</div><span class="block text-xs text-gray-600 mt-1">${record.className}</span></div><div class="flex items-center gap-3 text-right">${proofHTML}<div><span class="text-sm font-semibold text-gray-700">${record.time}</span><div class="mt-1">${statusHTML}</div></div></div>`;
+                } else {
+                    li.classList.add('bg-yellow-50'); statusHTML = `<span class="px-2 py-1 text-xs font-semibold text-yellow-800 bg-yellow-200 rounded-full">${trans.permissionStatus}</span>`;
+                    li.innerHTML = `<div><div class="flex items-center gap-2"><span class="font-medium text-gray-800">${record.name}</span>${pointsHTML}</div><p class="text-xs text-gray-600 mt-1 italic">"${record.reason}"</p></div><div class="text-right"><span class="text-sm font-semibold text-gray-700">${record.time}</span><div class="mt-1">${statusHTML}</div></div>`;
+                }
+                studentList.appendChild(li);
+            });
+            teacherList.innerHTML = teacherAttendance.length === 0 ? `<li class="text-center text-gray-500 p-4">${lang === 'id' ? 'Belum ada data absensi guru.' : 'No teacher attendance data yet.'}</li>` : '';
+            teacherAttendance.forEach(record => {
+                const li = document.createElement('li'); li.className = 'flex justify-between items-start p-4 rounded-xl';
+                let statusHTML = '';
+                if (record.status === 'Hadir') {
+                    let proofHTML = `<img src="${record.proof.data}" class="h-10 w-10 object-cover rounded-md cursor-pointer border" onclick="showFullPhoto('${record.proof.data}')">`;
+                    if (record.attendance_status === trans.onTime) { li.classList.add('bg-green-50'); statusHTML = `<span class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full">${trans.onTime}</span>`; }
+                    else { li.classList.add('bg-orange-50'); statusHTML = `<span class="px-2 py-1 text-xs font-semibold text-orange-800 bg-orange-200 rounded-full">${trans.late}</span>`; }
+                    li.innerHTML = `<div class="font-medium text-gray-800">${record.name}</div><div class="flex items-center gap-3 text-right">${proofHTML}<div><span class="text-sm font-semibold text-gray-700">${record.time}</span><div class="mt-1">${statusHTML}</div></div></div>`;
+                } else {
+                    li.classList.add('bg-yellow-50'); statusHTML = `<span class="px-2 py-1 text-xs font-semibold text-yellow-800 bg-yellow-200 rounded-full">${trans.permissionStatus}</span>`;
+                    li.innerHTML = `<div><span class="font-medium text-gray-800">${record.name}</span><p class="text-xs text-gray-600 mt-1 italic">"${record.reason}"</p></div><div class="text-right"><span class="text-sm font-semibold text-gray-700">${record.time}</span><div class="mt-1">${statusHTML}</div></div>`;
+                }
+                teacherList.appendChild(li);
+            });
+        }
+        
+        function showFullPhoto(base64) { fullPhotoPreview.src = base64; photoModal.style.display = 'flex'; }
+        
+        function showPage(page) {
+            roleSelection.classList.add('hidden');
+            attendanceFormContainer.classList.add('hidden');
+            attendanceResult.classList.add('hidden');
+            if (page === 'role') roleSelection.classList.remove('hidden');
+            else if (page === 'form') attendanceFormContainer.classList.remove('hidden');
+            else if (page === 'result') attendanceResult.classList.remove('hidden');
+        }
+
+        function setupFormForRole(role) {
+            const lang = document.documentElement.lang; const trans = translations[lang];
+            currentUserRole = role;
+            classInputGroup.classList.add('hidden');
+            passwordInputGroup.classList.add('hidden');
+            document.getElementById('action-buttons').classList.add('hidden');
+            document.getElementById('admin-login-button').classList.add('hidden');
+            proofOptions.classList.add('hidden');
+            proofInfo.classList.add('hidden');
+            photoPreview.classList.add('hidden');
+            currentAttendanceProof = null;
+            nameInput.value = ''; passwordInput.value = '';
+
+            if (role === 'student') {
+                formTitle.textContent = trans.formTitleStudent;
+                classInputGroup.classList.remove('hidden');
+                proofOptions.classList.remove('hidden');
+                document.getElementById('proof-helper').classList.remove('hidden');
+                document.getElementById('action-buttons').classList.remove('hidden');
+                presentBtn.disabled = true;
+            } else if (role === 'teacher') {
+                formTitle.textContent = trans.formTitleTeacher;
+                proofOptions.classList.remove('hidden');
+                document.getElementById('proof-helper').classList.remove('hidden');
+                document.getElementById('action-buttons').classList.remove('hidden');
+                presentBtn.disabled = true;
+            } else if (role === 'admin') {
+                formTitle.textContent = trans.formTitleAdmin;
+                passwordInputGroup.classList.remove('hidden');
+                document.getElementById('admin-login-button').classList.remove('hidden');
+            }
+            showPage('form');
+        }
+
+        function processNameInput() {
+            const name = nameInput.value.trim();
+            const lang = document.documentElement.lang; const trans = translations[lang];
+            if (!name) { showCustomAlert(trans.nameRequired); return null; }
+
+            const isAlreadyPresent = studentAttendance.some(rec => rec.name.toLowerCase() === name.toLowerCase()) ||
+                                   teacherAttendance.some(rec => rec.name.toLowerCase() === name.toLowerCase());
+            
+            if (isAlreadyPresent) { showCustomAlert(trans.alreadyPresent); return null; }
+            return name;
+        }
+
+        // --- EVENT LISTENERS ---
+        langIdBtn.addEventListener('click', () => setLanguage('id'));
+        langEnBtn.addEventListener('click', () => setLanguage('en'));
+        startBtn.addEventListener('click', () => { howToUseSection.classList.add('hidden'); appContent.classList.remove('hidden'); });
+        studentRoleBtn.addEventListener('click', () => setupFormForRole('student'));
+        teacherRoleBtn.addEventListener('click', () => setupFormForRole('teacher'));
+        adminRoleBtn.addEventListener('click', () => setupFormForRole('admin'));
+        backToRoleBtn.addEventListener('click', () => showPage('role'));
+        backToMenuBtn.addEventListener('click', () => { showPage('role'); userResult.classList.add('hidden'); adminDashboard.classList.add('hidden'); });
+        
+        continueToAppBtn.addEventListener('click', () => {
+            const schoolName = schoolNameInput.value.trim();
+            const lang = document.documentElement.lang;
+            if (!schoolName) { showCustomAlert(translations[lang].schoolNameRequired); return; }
+            schoolNameDisplay.textContent = schoolName;
+            schoolSelectionScreen.classList.add('hidden');
+            howToUseSection.classList.remove('hidden');
+        });
+
+        usePhotoBtn.addEventListener('click', () => photoInput.click());
+        photoInput.addEventListener('change', (e) => {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                currentAttendanceProof = {type: 'photo', data: event.target.result};
+                photoPreview.src = event.target.result;
+                photoPreview.classList.remove('hidden');
+                proofInfo.innerHTML = translations[document.documentElement.lang].photoSuccess;
+                proofInfo.classList.remove('hidden');
+                document.getElementById('proof-helper').classList.add('hidden');
+                presentBtn.disabled = false;
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        presentBtn.addEventListener('click', () => {
+            const name = processNameInput(); if (!name) return;
+            const lang = document.documentElement.lang; const trans = translations[lang];
+            if (!currentAttendanceProof) { showCustomAlert(trans.noProof); return; }
+            
+            const now = new Date();
+            const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            const att_status = (now.getHours() < 7 || (now.getHours() === 7 && now.getMinutes() === 0)) ? trans.onTime : trans.late;
+            
+            if (currentUserRole === 'student') {
+                const className = document.getElementById('class-select').value;
+                studentAttendance.push({ name, time, className, status: 'Hadir', attendance_status: att_status, reason: null, proof: currentAttendanceProof });
+                if (att_status === trans.onTime) {
+                    studentPoints[name] = (studentPoints[name] || 0) + 1;
+                }
+                userStatus.innerHTML = trans.statusPresentStudent(name, time, className, att_status);
+            } else if (currentUserRole === 'teacher') {
+                teacherAttendance.push({ name, time, status: 'Hadir', attendance_status: att_status, reason: null, proof: currentAttendanceProof });
+                userStatus.innerHTML = trans.statusPresentTeacher(name, time, att_status);
+            }
+            
+            document.getElementById('user-result-title').textContent = trans.userResultTitle;
+            userResult.classList.remove('hidden'); adminDashboard.classList.add('hidden');
+            showSuccessAnimation(trans.attendanceSuccess);
+            showPage('result');
+        });
+
+        permissionBtn.addEventListener('click', () => {
+            const name = nameInput.value.trim();
+            const lang = document.documentElement.lang;
+            if (!name) { showCustomAlert(translations[lang].nameRequired); return; }
+            const isAlreadyPresent = studentAttendance.some(rec => rec.name.toLowerCase() === name.toLowerCase()) || teacherAttendance.some(rec => rec.name.toLowerCase() === name.toLowerCase());
+            if (isAlreadyPresent) { showCustomAlert(translations[lang].alreadyPresent); return; }
+            reasonModal.style.display = 'flex';
+        });
+
+        cancelReasonBtn.addEventListener('click', () => { reasonModal.style.display = 'none'; reasonTextarea.value = ''; });
+        
+        submitReasonBtn.addEventListener('click', () => {
+            const name = nameInput.value.trim();
+            const reason = reasonTextarea.value.trim();
+            const lang = document.documentElement.lang; const trans = translations[lang];
+            if (!reason) { showCustomAlert(trans.reasonRequired); return; }
+            
+            const now = new Date();
+            const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            
+            if (currentUserRole === 'student') {
+                const className = document.getElementById('class-select').value;
+                studentAttendance.push({ name, time, className, status: 'Izin', attendance_status: null, reason, proof: null });
+                userStatus.innerHTML = trans.statusPermission(name, time, reason);
+            } else if (currentUserRole === 'teacher') {
+                teacherAttendance.push({ name, time, status: 'Izin', attendance_status: null, reason, proof: null });
+                userStatus.innerHTML = trans.statusPermission(name, time, reason);
+            }
+            
+            document.getElementById('user-result-title').textContent = trans.userResultTitle;
+            userResult.classList.remove('hidden'); adminDashboard.classList.add('hidden');
+            reasonTextarea.value = ''; reasonModal.style.display = 'none';
+            showSuccessAnimation(trans.permissionSuccess);
+            showPage('result');
+        });
+
+        loginBtn.addEventListener('click', () => {
+            const name = nameInput.value.trim();
+            const lang = document.documentElement.lang; const trans = translations[lang];
+             if (!name) { showCustomAlert(trans.nameRequired); return; }
+            if (passwordInput.value !== ADMIN_PASSWORD) { showCustomAlert(trans.wrongPassword); return; }
+            
+            const now = new Date();
+            const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            adminDashboard.classList.remove('hidden'); userResult.classList.add('hidden');
+            adminStatus.innerHTML = trans.adminStatus(name, time);
+            renderAttendanceLists();
+            showSuccessAnimation(trans.attendanceSuccess);
+            showPage('result');
+        });
+
+        togglePasswordBtn.addEventListener('click', () => {
+            const icon = togglePasswordBtn.querySelector('i');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+
+        closePhotoModalBtn.addEventListener('click', () => photoModal.style.display = 'none');
+        
+        function setActiveTab(clickedTab) {
+            [tabStudents, tabTeachers].forEach(tab => {
+                tab.classList.remove('tab-active', 'text-indigo-600', 'border-indigo-600');
+                tab.classList.add('text-gray-500');
+            });
+            clickedTab.classList.add('tab-active', 'text-indigo-600', 'border-indigo-600');
+            clickedTab.classList.remove('text-gray-500');
+            studentsContent.classList.toggle('hidden', clickedTab !== tabStudents);
+            teachersContent.classList.toggle('hidden', clickedTab !== tabTeachers);
+        }
+
+        tabStudents.addEventListener('click', () => setActiveTab(tabStudents));
+        tabTeachers.addEventListener('click', () => setActiveTab(tabTeachers));
+        
+        document.addEventListener('DOMContentLoaded', () => {
+             setLanguage('id');
+             populateClassOptions();
+             [reasonModal, photoModal].forEach(modal => modal.style.display = 'none');
+        });
+    </script>
+</body>
+</html>
