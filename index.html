@@ -1,569 +1,1192 @@
 <!DOCTYPE html>
 <html lang="id">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Absensi Online Fleksibel</title>
-    <!-- Impor Tailwind CSS untuk styling modern -->
+    <title>Aplikasi Absensi Sekolah - V11 (Stabil)</title>
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Impor Google Fonts 'Inter' untuk tampilan yang bersih -->
+    
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Impor ikon -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
         body { font-family: 'Inter', sans-serif; }
-        /* Latar belakang baru dengan pola geometris */
-        .main-background { 
-            background-color: #f0f4ff;
-            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23a5b4fc' fill-opacity='0.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        
+        /* Background & Glassmorphism */
+        .space-bg { background-image: url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2071&auto=format&fit=crop'); background-size: cover; background-position: center; background-attachment: fixed; }
+        .glass-card { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        
+        /* Custom Select Arrow */
+        .form-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23e5e7eb' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        
+        /* UI Elements */
+        .tab-active { border-color: #818cf8; color: #c7d2fe; background-color: rgba(79, 70, 229, 0.3); }
+        .modal-backdrop { background-color: rgba(0,0,0,0.7); backdrop-filter: blur(5px); }
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        
+        /* Loader */
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Tombol Edit */
+        .btn-edit { background-color: rgba(59, 130, 246, 0.6); color: white; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 500; transition: all 0.2s; cursor: pointer; }
+        .btn-edit:hover { background-color: rgba(59, 130, 246, 1); }
+
+        /* Fitur Gamifikasi (Streak/Api) */
+        .streak-display {
+            background-color: rgba(255, 152, 0, 0.2);
+            border: 1px solid rgba(255, 152, 0, 0.5);
+            color: #ffc966;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: inline-block;
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.1);
         }
-        .success-animation { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); z-index: 9999; justify-content: center; align-items: center; }
-        .checkmark__circle { stroke-dasharray: 166; stroke-dashoffset: 166; stroke-width: 2; stroke-miterlimit: 10; stroke: #4CAF50; fill: none; animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards; }
-        .checkmark { width: 100px; height: 100px; border-radius: 50%; display: block; stroke-width: 3; stroke: #fff; stroke-miterlimit: 10; margin: 10% auto; box-shadow: inset 0px 0px 0px #4CAF50; animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both; }
-        .checkmark__check { transform-origin: 50% 50%; stroke-dasharray: 48; stroke-dashoffset: 48; animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards; }
-        @keyframes stroke { 100% { stroke-dashoffset: 0; } }
-        @keyframes scale { 0%, 100% { transform: none; } 50% { transform: scale3d(1.1, 1.1, 1); } }
-        @keyframes fill { 100% { box-shadow: inset 0px 0px 0px 60px #4CAF50; } }
-        .tab-active { border-bottom-color: #4f46e5; color: #4f46e5; font-weight: 700; }
-        .modal { display: none; }
-        .role-card { transition: all 0.3s ease-in-out; }
-        .role-card:hover { transform: translateY(-8px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); }
-        .btn-gradient { background-image: linear-gradient(to right, #4f46e5, #7c3aed); transition: all 0.3s ease-in-out; }
-        .btn-gradient:hover { box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4), 0 4px 6px -2px rgba(124, 58, 237, 0.4); }
-        .btn-gradient-green { background-image: linear-gradient(to right, #10b981, #34d399); }
-        .btn-gradient-green:hover { box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4); }
-        .btn-gradient-yellow { background-image: linear-gradient(to right, #f59e0b, #facc15); }
-        .btn-gradient-yellow:hover { box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.4); }
+        
+        /* Fitur Gamifikasi (Leaderboard) */
+        .gamification-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1.5rem;
+            border-radius: 12px;
+            backdrop-filter: blur(5px);
+        }
+        .stat-card h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #d1d5db;
+        }
+        .stat-card ol, .stat-card p {
+            font-size: 0.95rem;
+            color: #e5e7eb;
+        }
+        .stat-card ol li {
+            margin-bottom: 0.5rem;
+        }
+        .stat-card ol li strong {
+            color: white;
+            font-weight: 600;
+        }
+        
     </style>
 </head>
-<body class="flex min-h-screen main-background">
+<body class="space-bg min-h-screen flex items-center justify-center p-4 text-white">
 
-    <!-- Sidebar Bahasa -->
-    <aside class="w-20 md:w-48 bg-white/80 backdrop-blur-sm shadow-lg p-4 flex flex-col items-center md:items-start rounded-r-2xl">
-        <h2 class="text-lg font-bold hidden md:block text-indigo-600" data-lang-key="languageTitle">Bahasa</h2>
-        <div class="mt-4 space-y-2 w-full">
-            <button id="lang-id" class="w-full flex items-center justify-center md:justify-start p-2 rounded-lg bg-indigo-100">
-                <img src="https://placehold.co/24x24/FF0000/FFFFFF?text=ID" alt="Bendera Indonesia" class="rounded-full">
-                <span class="ml-3 hidden md:inline text-indigo-700 font-semibold">Indonesia</span>
-            </button>
-            <button id="lang-en" class="w-full flex items-center justify-center md:justify-start p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                <img src="https://placehold.co/24x24/0000FF/FFFFFF?text=EN" alt="Bendera Inggris" class="rounded-full">
-                <span class="ml-3 hidden md:inline">English</span>
-            </button>
+    <div id="app-container" class="w-full max-w-7xl mx-auto rounded-2xl shadow-2xl overflow-hidden transition-all duration-500 glass-card">
+        
+        <!-- Halaman Tutorial/Welcome -->
+        <div id="welcome-page" class="p-8 sm:p-12 fade-in">
+            <h1 class="text-4xl sm:text-5xl font-bold text-center mb-4">Aplikasi Absensi V11</h1>
+            <p class="text-gray-300 text-center mb-10">Proses absensi hadir kini lebih cepat tanpa foto.</p>
+            <div class="text-center mt-10">
+                <button id="start-btn" class="bg-indigo-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition-all duration-300 transform hover:scale-105">Mulai</button>
+            </div>
         </div>
-    </aside>
 
-    <!-- Konten Utama -->
-    <main class="flex-1 p-4 md:p-8 overflow-y-auto">
-        <div class="max-w-4xl mx-auto">
-            
-            <!-- Layar Pemilihan Sekolah -->
-            <div id="school-selection-screen" class="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl text-center">
-                <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800 mb-4" data-lang-key="schoolSelectTitle">Selamat Datang!</h1>
-                <p class="text-gray-600 mb-6" data-lang-key="schoolSelectSubtitle">Masukkan nama sekolah Anda untuk memulai.</p>
-                <div class="max-w-sm mx-auto">
-                    <input type="text" id="school-name-input" class="w-full px-4 py-3 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Contoh: SMAN 1 Bogor">
-                    <button id="continue-to-app-btn" class="mt-4 w-full text-white font-bold py-3 px-6 rounded-lg btn-gradient">Lanjutkan</button>
-                </div>
-            </div>
-
-            <!-- Halaman Panduan -->
-            <div id="how-to-use" class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl transition-opacity duration-500 hidden p-8">
-                <div class="text-center mb-8">
-                     <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800" data-lang-key="howToTitle">Cara Menggunakan Aplikasi</h1>
-                </div>
-                <div class="space-y-6 text-gray-700">
-                    <div class="flex items-start gap-4">
-                        <div class="flex-shrink-0 bg-indigo-100 text-indigo-600 rounded-full h-10 w-10 flex items-center justify-center font-bold text-lg">1</div>
-                        <div>
-                            <h3 class="font-bold text-lg" data-lang-key="howToStep1Title">Absen Wajib Foto</h3>
-                            <p class="text-gray-600" data-lang-key="howToStep1Desc">Semua absensi 'Hadir' (Siswa & Guru) wajib menyertakan foto selfie sebagai bukti. Absen tepat waktu (&le; 07:00) akan memberikan siswa +1 Poin.</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-4">
-                        <div class="flex-shrink-0 bg-indigo-100 text-indigo-600 rounded-full h-10 w-10 flex items-center justify-center font-bold text-lg">2</div>
-                        <div>
-                            <h3 class="font-bold text-lg" data-lang-key="howToStep2Title">Nama Fleksibel</h3>
-                            <p class="text-gray-600" data-lang-key="howToStep2Desc">Anda tidak perlu terikat daftar nama. Cukup ketik nama siapa saja yang ingin diabsen. Aplikasi akan mencatatnya secara otomatis.</p>
-                        </div>
-                    </div>
-                     <div class="flex items-start gap-4">
-                         <div class="flex-shrink-0 bg-indigo-100 text-indigo-600 rounded-full h-10 w-10 flex items-center justify-center font-bold text-lg">3</div>
-                        <div>
-                            <h3 class="font-bold text-lg" data-lang-key="howToStep3Title">Dasbor Admin</h3>
-                            <p class="text-gray-600" data-lang-key="howToStep3Desc">Admin dapat melihat rekap absensi, poin, dan foto bukti dari semua pengguna yang sudah melakukan absensi.</p>
-                        </div>
-                    </div>
-                </div>
-                <button id="start-btn" class="mt-10 w-full text-white font-bold py-3 px-6 rounded-lg btn-gradient" data-lang-key="startButton">OK, Saya Mengerti!</button>
-            </div>
-
-            <!-- Bagian Utama Aplikasi -->
-            <div id="app-content" class="hidden transition-opacity duration-500">
-                <div class="text-center mb-8">
-                    <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800" data-lang-key="appTitle">Aplikasi Absensi Online</h1>
-                    <p id="school-name-display" class="font-semibold text-xl mt-2 text-indigo-600"></p>
-                </div>
+        <!-- Halaman Login -->
+        <div id="login-page" class="hidden flex-col md:flex-row">
+            <div class="w-full p-8 sm:p-12 flex flex-col justify-center">
+                <h1 class="text-3xl sm:text-4xl font-bold mb-2 text-shadow">Silakan Login</h1>
                 
-                <!-- Pilihan Peran -->
-                <div id="role-selection" class="relative">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <button id="student-role-btn" class="role-card p-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg text-center"><span class="text-5xl">👨‍🎓</span><h2 class="text-2xl font-bold text-gray-800 mt-4" data-lang-key="studentRole">Saya Siswa</h2></button>
-                        <button id="teacher-role-btn" class="role-card p-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg text-center"><span class="text-5xl">👩‍🏫</span><h2 class="text-2xl font-bold text-gray-800 mt-4" data-lang-key="teacherRole">Saya Guru</h2></button>
-                        <button id="admin-role-btn" class="role-card p-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg text-center"><span class="text-5xl">🛡️</span><h2 class="text-2xl font-bold text-gray-800 mt-4" data-lang-key="adminRole">Saya Admin</h2></button>
+                <form id="login-form">
+                    <div class="mb-6">
+                        <label for="role" class="block text-gray-200 font-medium mb-2">1. Pilih peran Anda</label>
+                        <select id="role" name="role" class="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition appearance-none form-select text-white">
+                            <option value="murid" class="text-black">Murid</option>
+                            <option value="guru" class="text-black">Guru</option>
+                            <option value="admin" class="text-black">Admin</option>
+                        </select>
                     </div>
-                </div>
+                    
+                    <div id="username-container" class="mb-4">
+                        <label for="username" class="block text-gray-200 font-medium mb-2">2. Pilih Nama Pengguna</label>
+                        <select id="username" name="username" class="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition appearance-none form-select text-white">
+                            <!-- Options di-load oleh JS -->
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4 relative">
+                        <label id="password-label" for="password" class="block text-gray-200 font-medium mb-2">3. Masukkan Password</label>
+                        <input type="password" id="password" class="w-full pl-4 pr-10 py-3 bg-white/20 border border-white/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" required>
+                        <button type="button" id="toggle-password" class="absolute inset-y-0 right-0 top-7 flex items-center pr-3 text-gray-300 hover:text-white">
+                            <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                            <svg id="eye-off-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                        </button>
+                    </div>
 
-                <!-- Form Absensi -->
-                <div id="attendance-form-container" class="hidden mt-8">
-                    <button id="back-to-role" class="mb-4 text-indigo-600 hover:underline font-semibold" data-lang-key="backButton">← Kembali</button>
-                    <div class="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl">
-                        <h2 id="form-title" class="text-2xl font-bold text-gray-800 text-center mb-6">Form Absensi</h2>
-                        <form id="attendance-form" onsubmit="return false;">
-                            <div class="mb-4">
-                                <label for="name" class="block text-gray-700 font-medium mb-2" data-lang-key="nameLabel">Nama Lengkap</label>
-                                <input type="text" id="name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" data-lang-key="namePlaceholder" placeholder="Ketik nama Anda di sini..." required>
-                            </div>
-                            <div id="class-input-group" class="mb-4 hidden">
-                                <label for="class-select" class="block text-gray-700 font-medium mb-2" data-lang-key="classLabel">Kelas</label>
-                                <select id="class-select" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                    <!-- Daftar kelas akan dibuat oleh JavaScript -->
-                                </select>
-                            </div>
-                            
-                            <div id="proof-options" class="mb-4 hidden">
-                                <label class="block text-gray-700 font-medium mb-2" data-lang-key="proofLabel">Bukti Kehadiran (Wajib Foto)</label>
-                                <button type="button" id="use-photo-btn" class="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:bg-gray-100 font-semibold transition-colors">
-                                    <i class="fas fa-camera"></i> <span data-lang-key="usePhoto">Unggah Foto Selfie</span>
-                                </button>
-                                <input type="file" id="photo-input" class="hidden" accept="image/*" capture="user">
-                                <div id="proof-info" class="mt-3 p-3 bg-gray-100 rounded-lg text-sm text-gray-600 hidden"></div>
-                                <img id="photo-preview" class="mt-3 rounded-lg max-h-48 mx-auto hidden" />
-                                <p id="proof-helper" class="text-xs text-center text-gray-500 mt-2" data-lang-key="proofHelper">Unggah foto untuk mengaktifkan tombol Hadir.</p>
-                            </div>
-                            
-                            <!-- Input Password dengan Tombol Show/Hide -->
-                            <div id="password-input-group" class="mb-4 hidden">
-                                <label for="password" class="block text-gray-700 font-medium mb-2" data-lang-key="passwordLabel">Password</label>
-                                <div class="relative">
-                                    <input type="password" id="password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Masukkan password admin...">
-                                    <button type="button" id="toggle-password-btn" class="absolute inset-y-0 right-0 flex items-center px-4 text-gray-600">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div id="action-buttons" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                               <button type="button" id="present-btn" class="w-full text-white font-bold py-3 px-6 rounded-lg btn-gradient-green disabled:bg-gray-400 disabled:bg-none" data-lang-key="presentButton">Hadir</button>
-                               <button type="button" id="permission-btn" class="w-full text-white font-bold py-3 px-6 rounded-lg btn-gradient-yellow" data-lang-key="permissionButton">Izin</button>
-                            </div>
-                             <div id="admin-login-button" class="hidden mt-6">
-                                <button type="button" id="login-btn" class="w-full text-white font-bold py-3 px-6 rounded-lg btn-gradient" data-lang-key="loginButton">Login</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Hasil Absensi -->
-                <div id="attendance-result" class="hidden mt-8">
-                     <button id="back-to-menu-btn" class="mb-4 text-indigo-600 hover:underline font-semibold" data-lang-key="backToMenu">← Kembali ke Menu Utama</button>
-                    <div id="user-result" class="hidden bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl">
-                        <h2 id="user-result-title" class="text-2xl font-bold text-gray-800 mb-4">Status Kehadiran Anda</h2>
-                        <div id="user-status" class="text-lg"></div>
-                    </div>
-                    <div id="admin-dashboard" class="hidden bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl">
-                        <div class="p-8"><h2 class="text-2xl font-bold text-gray-800 mb-2" data-lang-key="adminDashboardTitle">Dasbor Absensi Admin</h2><p id="admin-status" class="mb-6 text-gray-600"></p><div class="border-b border-gray-200"><nav class="-mb-px flex space-x-8" aria-label="Tabs"><button id="tab-students" class="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm tab-active" data-lang-key="studentTab">Absensi Siswa</button><button id="tab-teachers" class="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-lang-key="teacherTab">Absensi Guru</button></nav></div></div>
-                        <div class="p-8 pt-0"><div id="students-content"><ul id="student-list" class="space-y-3"></ul></div><div id="teachers-content" class="hidden"><ul id="teacher-list" class="space-y-3"></ul></div></div>
-                    </div>
-                </div>
+                    <p id="error-message" class="text-red-400 text-sm mt-4 mb-4 h-5"></p>
+                    
+                    <button type="submit" class="w-full bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition-all duration-300 transform hover:scale-105">Masuk</button>
+                </form>
             </div>
         </div>
-    </main>
-    
-    <!-- Modal Alasan Izin -->
-    <div id="reason-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-50 h-full w-full z-50 flex justify-center items-center"><div class="relative mx-auto p-8 border w-full max-w-md shadow-lg rounded-2xl bg-white"><h3 class="text-2xl font-bold text-gray-800 text-center" data-lang-key="reasonTitle">Masukkan Alasan Izin</h3><div class="mt-4 px-7 py-3"><textarea id="reason-textarea" class="w-full h-24 px-3 py-2 text-base text-gray-700 placeholder-gray-600 border rounded-lg focus:shadow-outline" data-lang-key="reasonPlaceholder" placeholder="Tuliskan alasan Anda di sini..."></textarea></div><div class="items-center px-4 py-3 gap-4 flex"><button id="cancel-reason-btn" class="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-semibold">Batal</button><button id="submit-reason-btn" class="w-full px-4 py-2 text-white rounded-lg font-semibold btn-gradient">Kirim</button></div></div></div>
-    
-    <!-- Modal Preview Foto -->
-    <div id="photo-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 h-full w-full z-50 flex justify-center items-center p-4"><div class="relative bg-white p-4 rounded-xl max-w-3xl max-h-full"><button id="close-photo-modal" class="absolute -top-3 -right-3 bg-white rounded-full h-8 w-8 text-xl text-gray-700">&times;</button><img id="full-photo-preview" src="" class="max-w-full max-h-[85vh] object-contain"></div></div>
+        
+        <!-- Halaman Dashboard -->
+        <div id="dashboard-page" class="hidden p-6 sm:p-10">
+            <div class="flex flex-wrap justify-between items-center mb-8 pb-4 border-b border-white/20 gap-4">
+                <div>
+                    <h2 id="welcome-message" class="text-2xl md:text-3xl font-bold"></h2>
+                    <p class="text-gray-300 text-sm">Hari ini: <span id="current-date"></span></p>
+                </div>
+                <button id="logout-btn" class="bg-red-500/80 text-white font-medium py-2 px-5 rounded-lg hover:bg-red-600 focus:outline-none focus:ring-4 focus:ring-red-300 transition-all duration-300">Keluar</button>
+            </div>
+            
+            <!-- Container utama untuk absen atau laporan -->
+            <div id="dashboard-content">
+                <!-- Konten dinamis (absen atau laporan) -->
+            </div>
+        </div>
+    </div>
 
-    <!-- Animasi Sukses -->
-    <div id="success-animation" class="success-animation"><div class="bg-white p-6 rounded-lg text-center"><svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52"><circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/><path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/></svg><p id="success-message" class="text-xl font-semibold mt-4 text-gray-700"></p></div></div>
-    
-    <!-- Notifikasi Error -->
-    <div id="custom-alert" class="fixed top-8 right-8 z-50 bg-red-600 text-white py-3 px-6 rounded-xl shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none"><p id="custom-alert-message"></p></div>
+    <!-- Modal Keterangan (Sakit/Izin) -->
+    <div id="keterangan-modal" class="fixed inset-0 z-50 flex items-center justify-center modal-backdrop hidden">
+        <div class="bg-gray-800 text-white rounded-lg shadow-xl p-6 w-full max-w-md fade-in">
+            <h3 class="text-xl font-bold mb-4">Tambahkan Keterangan</h3>
+            <textarea id="modal-keterangan" class="w-full p-2 rounded bg-gray-700 border border-gray-600" rows="3" placeholder="Contoh: Demam, acara keluarga, dll."></textarea>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button id="modal-cancel" class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded-lg">Batal</button>
+                <button id="modal-submit-keterangan" class="bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded-lg flex items-center justify-center">
+                    <span id="keterangan-submit-text">Kirim Absen</span>
+                    <div id="keterangan-submit-loader" class="loader hidden ml-2"></div>
+                </button>
+            </div>
+        </div>
+    </div>
 
+    <!-- Modal Edit Absensi (untuk Admin) -->
+    <div id="edit-modal" class="fixed inset-0 z-50 flex items-center justify-center modal-backdrop hidden">
+        <div class="bg-gray-800 text-white rounded-lg shadow-xl p-6 w-full max-w-md fade-in">
+            <h3 class="text-xl font-bold mb-4">Edit Absensi</h3>
+            
+            <input type="hidden" id="edit-user-id">
+            
+            <div class="mb-4">
+                <label class="block text-gray-400 text-sm mb-1">Nama Murid</label>
+                <input id="edit-nama" class="w-full p-2 rounded bg-gray-700 border border-gray-600" type="text" disabled>
+            </div>
+            
+            <div class="mb-4">
+                <label for="edit-status" class="block text-gray-200 font-medium mb-2">Status Baru</label>
+                <select id="edit-status" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 transition appearance-none form-select text-white">
+                    <option value="Hadir Tepat Waktu" class="text-black">Hadir Tepat Waktu</option>
+                    <option value="Terlambat" class="text-black">Terlambat</option>
+                    <option value="Sakit" class="text-black">Sakit</option>
+                    <option value="Izin" class="text-black">Izin</option>
+                    <option value="Alfa" class="text-black">Alfa (Hapus Absen)</option>
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label for="edit-keterangan" class="block text-gray-200 font-medium mb-2">Keterangan (Opsional)</label>
+                <textarea id="edit-keterangan" class="w-full p-2 rounded bg-gray-700 border border-gray-600" rows="3" placeholder="Contoh: Dirawat, acara keluarga, dll."></textarea>
+            </div>
+
+            <div class="mt-6 flex justify-end space-x-3">
+                <button id="modal-edit-cancel" class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded-lg">Batal</button>
+                <button id="modal-edit-submit" class="bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded-lg flex items-center justify-center">
+                    <span id="edit-submit-text">Simpan Perubahan</span>
+                    <div id="edit-submit-loader" class="loader hidden ml-2"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+    
     <script>
-        // --- DATA (FLEKSIBEL, TANPA MASTER LIST) ---
-        let studentAttendance = [];
-        let teacherAttendance = [];
-        let studentPoints = {};
-        let currentUserRole = null;
-        let currentAttendanceProof = null;
-        const ADMIN_PASSWORD = 'admin123';
+        // === KONFIGURASI SUPABASE (WAJIB DIISI!) ===
+        const SUPABASE_URL = 'https://mqxniexpnxdoeffcqmtz.supabase.co'; // Ganti dengan Project URL Anda
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xeG5pZXhwbnhkb2VmZmNxbXR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyOTc4OTQsImV4cCI6MjA3NTg3Mzg5NH0.pEMojPnEbsUhi3oDD35mEALxJXGtXarMahhdAhct2jA'; // Ganti dengan anon public Key Anda
+        // ===========================================
 
-        // --- Teks Multi-Bahasa ---
-        const translations = {
-            id: {
-                languageTitle: "Bahasa",
-                schoolSelectTitle: "Selamat Datang!",
-                schoolSelectSubtitle: "Masukkan nama sekolah Anda untuk memulai.",
-                howToTitle: "Cara Menggunakan Aplikasi",
-                howToStep1Title: "Absen Wajib Foto",
-                howToStep1Desc: "Semua absensi 'Hadir' (Siswa & Guru) wajib menyertakan foto selfie sebagai bukti. Absen tepat waktu (\u2264 07:00) akan memberikan siswa +1 Poin.",
-                howToStep2Title: "Nama Fleksibel",
-                howToStep2Desc: "Anda tidak perlu terikat daftar nama. Cukup ketik nama siapa saja yang ingin diabsen. Aplikasi akan mencatatnya secara otomatis.",
-                howToStep3Title: "Dasbor Admin",
-                howToStep3Desc: "Admin dapat melihat rekap absensi, poin, dan foto bukti dari semua pengguna yang sudah melakukan absensi.",
-                startButton: "OK, Saya Mengerti!", appTitle: "Aplikasi Absensi Online",
-                teacherRole: "Saya Guru", studentRole: "Saya Siswa", adminRole: "Saya Admin",
-                backButton: "← Kembali", backToMenu: "← Kembali ke Menu Utama", nameLabel: "Nama Lengkap", namePlaceholder: "Ketik nama Anda di sini...", classLabel: "Kelas", passwordLabel: "Password",
-                presentButton: "Hadir", permissionButton: "Izin", loginButton: "Login",
-                formTitleStudent: "Form Absensi Siswa", formTitleTeacher: "Form Absensi Guru", formTitleAdmin: "Form Login Admin",
-                userResultTitle: "Status Kehadiran Anda", adminDashboardTitle: "Dasbor Absensi Admin",
-                studentTab: "Absensi Siswa", teacherTab: "Absensi Guru",
-                attendanceSuccess: "Absensi Berhasil!", permissionSuccess: "Izin Telah Dicatat!",
-                nameRequired: "Nama tidak boleh kosong.", wrongPassword: "Password salah! Silakan coba lagi.", alreadyPresent: "Nama ini sudah melakukan absensi hari ini.",
-                proofLabel: "Bukti Kehadiran (Wajib Foto)", usePhoto: "Unggah Foto Selfie", noProof: "Harap unggah foto selfie sebagai bukti.", proofHelper: "Unggah foto untuk mengaktifkan tombol Hadir.",
-                reasonTitle: "Masukkan Alasan Izin", reasonPlaceholder: "Tuliskan alasan Anda di sini...", cancelButton: "Batal", submitButton: "Kirim", reasonRequired: "Alasan tidak boleh kosong.",
-                onTime: "Tepat Waktu", late: "Terlambat", permissionStatus: "Izin", pointsLabel: "Poin",
-                statusPresentStudent: (name, time, className, attStatus) => `<strong>${name}</strong> dari kelas <strong>${className}</strong>, Anda berhasil absen pukul <strong>${time}</strong> (<strong>${attStatus}</strong>).`,
-                statusPresentTeacher: (name, time, attStatus) => `Terima kasih, <strong>${name}</strong>. Anda berhasil absen pukul <strong>${time}</strong> (<strong>${attStatus}</strong>).`,
-                statusPermission: (name, time, reason) => `Izin Anda (<strong>${name}</strong>) dicatat pukul <strong>${time}</strong>. Alasan: "${reason}".`,
-                adminStatus: (name, time) => `Selamat datang, Admin <strong>${name}</strong>. Login pukul <strong>${time}</strong>.`,
-                photoSuccess: `<i class="fas fa-check-circle text-green-500"></i> Foto berhasil dimuat. Siap untuk absen.`,
-                schoolNameRequired: "Nama sekolah tidak boleh kosong!"
-            },
-            en: {
-                languageTitle: "Language",
-                schoolSelectTitle: "Welcome!",
-                schoolSelectSubtitle: "Enter your school name to begin.",
-                howToTitle: "How to Use",
-                howToStep1Title: "Photo Proof is Mandatory",
-                howToStep1Desc: "All 'Present' attendances (Student & Teacher) require a selfie photo as proof. On-time attendance (\u2264 07:00 AM) gives students +1 Point.",
-                howToStep2Title: "Flexible Names",
-                howToStep2Desc: "You are not tied to a predefined name list. Just type any name you want to record for attendance.",
-                howToStep3Title: "Admin Dashboard",
-                howToStep3Desc: "Admins can see a recap of attendance, points, and photo proofs for all users who have checked in.",
-                startButton: "OK, I Understand!", appTitle: "Online Attendance App",
-                teacherRole: "I am a Teacher", studentRole: "I am a Student", adminRole: "I am an Admin",
-                backButton: "← Back", backToMenu: "← Back to Main Menu", nameLabel: "Full Name", namePlaceholder: "Type your name here...", classLabel: "Class", passwordLabel: "Password",
-                presentButton: "Present", permissionButton: "Permission", loginButton: "Login",
-                formTitleStudent: "Student Attendance Form", formTitleTeacher: "Teacher Attendance Form", formTitleAdmin: "Admin Login Form",
-                userResultTitle: "Your Attendance Status", adminDashboardTitle: "Admin Attendance Dashboard",
-                studentTab: "Student Attendance", teacherTab: "Teacher Attendance",
-                attendanceSuccess: "Attendance Successful!", permissionSuccess: "Permission Recorded!",
-                nameRequired: "Name cannot be empty.", wrongPassword: "Wrong password! Please try again.", alreadyPresent: "This name has already marked attendance today.",
-                proofLabel: "Attendance Proof (Photo Required)", usePhoto: "Upload Selfie Photo", noProof: "Please upload a selfie photo as proof.", proofHelper: "Upload a photo to enable the Present button.",
-                reasonTitle: "Enter Reason for Permission", reasonPlaceholder: "Write your reason here...", cancelButton: "Cancel", submitButton: "Submit", reasonRequired: "Reason cannot be empty.",
-                onTime: "On Time", late: "Late", permissionStatus: "Permission", pointsLabel: "Points",
-                statusPresentStudent: (name, time, className, attStatus) => `<strong>${name}</strong> from class <strong>${className}</strong>, you've checked in at <strong>${time}</strong> (<strong>${attStatus}</strong>).`,
-                statusPresentTeacher: (name, time, attStatus) => `Thank you, <strong>${name}</strong>. You've checked in at <strong>${time}</strong> (<strong>${attStatus}</strong>).`,
-                statusPermission: (name, time, reason) => `Your permission (<strong>${name}</strong>) was recorded at <strong>${time}</strong>. Reason: "${reason}".`,
-                adminStatus: (name, time) => `Welcome, Admin <strong>${name}</strong>. Logged in at <strong>${time}</strong>.`,
-                photoSuccess: `<i class="fas fa-check-circle text-green-500"></i> Photo loaded successfully. Ready to check in.`,
-                schoolNameRequired: "School name cannot be empty!"
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Data pengguna (Username & Password)
+        const DATA = {
+            admin: [{ id: 'admin01', nama: 'Bambang Mulyono', password: 'admin123' }],
+            guru: [
+                { id: 'guru01', nama: 'Budi Santoso', waliKelas: '10A' },
+                { id: 'guru02', nama: 'Siti Aminah', waliKelas: '10B' },
+                { id: 'guru03', nama: 'Agus Setiawan', waliKelas: '10C' },
+                { id: 'guru04', nama: 'Dewi Lestari', waliKelas: '11A' },
+                { id: 'guru05', nama: 'Eko Prasetyo', waliKelas: '11B' },
+                { id: 'guru06', nama: 'Fitriani', waliKelas: '11C' },
+                { id: 'guru07', nama: 'Gunawan', waliKelas: '12A' },
+                { id: 'guru08', nama: 'Herlina', waliKelas: '12B' },
+                { id: 'guru09', nama: 'Iwan Fals', waliKelas: '12C' },
+                { id: 'guru10', nama: 'Joko Susilo' },
+                { id: 'guru11', nama: 'Kartika' },
+                { id: 'guru12', nama: 'Lina Marlina' },
+                { id: 'guru13', nama: 'Muhammad Ali' },
+                { id: 'guru14', nama: 'Nina ardiana' },
+                { id: 'guru15', nama: 'Putri Wulandari' },
+                { id: 'guru16', nama: 'Rahmat Hidayat' },
+                { id: 'guru17', nama: 'Sri Wahyuni' },
+                { id: 'guru18', nama: 'Taufik Hidayat' },
+                { id: 'guru19', nama: 'Utami' },
+                { id: 'guru20', nama: 'Yusuf Maulana' }
+            ].map(g => ({ ...g, password: 'guru111' })), // Semua guru passwordnya 'guru111'
+            murid: {
+                '10A': ['Aditya Pratama', 'Aisha Putri', 'Akbar Maulana', 'Amanda Sari', 'Andrean Wijaya', 'Anita Dewi', 'Arief Rahman', 'Bella Christin', 'Bima Sakti', 'Cahaya Ningrum', 'Citra Kirana', 'Dani Ramadhan', 'Dian Permata', 'Dimas Anggara', 'Doni Setiawan', 'Eka Yulianti', 'Elang Perkasa', 'Fajar Sidik', 'Farah Diba', 'Febri Haryadi', 'Fitriyah', 'Galih Ginanjar'],
+                '10B': ['Gita Gutawa', 'Hadi Santoso', 'Hanifah', 'Haris Setiawan', 'Indah Permatasari', 'Irfan Hakim', 'Isyana Sarasvati', 'Jajang Nurjaman', 'Joko Anwar', 'Kevin Sanjaya', 'Lala Karmela', 'Laura Basuki', 'Luna Maya', 'Maher Zain', 'Maria Selena', 'Mario Teguh', 'Melly Goeslaw', 'Morgan Oey', 'Nadiem Makarim', 'Nadya Hutagalung', 'Nicholas Saputra', 'Nikita Willy'],
+                '10C': ['Gilang Dirga', 'Gisella Anastasia', 'Hamish Daud', 'Herjunot Ali', 'Iko Uwais', 'Indra Bekti', 'Indy Barends', 'Joe Taslim', 'Joshua Suherman', 'Judika Sihotang', 'Julia Perez', 'Krisdayanti', 'Laudya Cynthia Bella', 'Lukman Sardi', 'Marcell Siahaan', 'Mariana Renata', 'Marsha Timothy', 'Maudy Koesnaedi', 'Mike Lewis', 'Miller Khan', 'Nadine Chandrawinata', 'Nana Mirdad'],
+                '11A': ['Olivia Jensen', 'Omar Daniel', 'Once Mekel', 'Pasha Ungu', 'Pevita Pearce', 'Prilly Latuconsina', 'Putri Titian', 'Raditya Dika', 'Raisa Andriana', 'Raline Shah', 'Randy Pangalila', 'Revalina S. Temat', 'Reza Rahadian', 'Rianti Cartwright', 'Richard Kyle', 'Rico Tampatty', 'Rina Nose', 'Ringgo Agus Rahman', 'Rionaldo Stockhorst', 'Risty Tagor', 'Rizky Billar', 'Robby Purba'],
+                '11B': ['Sandra Dewi', 'Shandy Aulia', 'Shareefa Daanish', 'Sharena Delon', 'Sheila Marcia', 'Sherina Munaf', 'Shireen Sungkar', 'Sissy PriscilLia', 'Slamet Rahardjo', 'Sophia Latjuba', 'Stefan William', 'Surya Saputra', 'Sutan Sjahrir', 'Tantri Kotak', 'Tara Basro', 'Tatjana Saphira', 'Tegar Septian', 'Teuku Rassya', 'Teuku Wisnu', 'Thomas Djorghi', 'Tika Panggabean', 'Tina Toon'],
+                '11C': ['Titi Kamal', 'Tora Sudiro', 'Tri Retno Mutiara', 'Tulus', 'Ussy Sulistiawaty', 'Valeria Stahl Kaliey', 'Velove Vexia', 'Vidi Aldiano', 'Vino G. Bastian', 'Widyawati', 'Wulan Guritno', 'Yasmine Wildblood', 'Yoriko Angeline', 'Yoshi Sudarso', 'Yuanita Christiani', 'Yuki Kato', 'Zaskia Adya Mecca', 'Zaskia Gotik', 'Zee Zee Shahab', 'Abimana Aryasatya', 'Adipati Dolken', 'Adly Fairuz'],
+                '12A': ['Afgan Syahreza', 'Agnes Monica', 'Ahmad Albar', 'Ahmad Dhani', 'Aimee Saras', 'Aishwarya Rai', 'Ajeng Kartini', 'Al Ghazali', 'Aliando Syarief', 'Alika Islamadina', 'Aline Adita', 'Alyssa Soebandono', 'Aming Sugandhi', 'Andhika Pratama', 'Andien Aisyah', 'Andrew White', 'Andy /rif', 'Angel Karamoy', 'Angela Gilsha', 'Anggun C. Sasmi', 'Anjasmara', 'Annisa Pohan'],
+                '12B': ['Anwar Fuady', 'Ari Lasso', 'Ariel Tatum', 'Arifin Putra', 'Ariyo Wahab', 'Artika Sari Devi', 'Asmirandah', 'Atiqah Hasiholan', 'Aura Kasih', 'Ayu Azhari', 'Ayu Ting Ting', 'Baim Wong', 'Bams Samsons', 'Barry Prima', 'Bebi Romeo', 'Ben Joshua', 'Ben Kasyafani', 'Bertrand Antolin', 'Bunga Citra Lestari', 'Caitlin Halderman', 'Candra Darusman', 'Carissa Putri'],
+                '12C': ['Chacha Frederica', 'Charly van Houten', 'Chelsea Olivia', 'Christine Hakim', 'Ciccio Manassero', 'Cindy Fatika Sari', 'Cinta Laura', 'Cornelia Agatha', 'Cut Keke', 'Cut Mini', 'Cut Tari', 'Darius Sinathrya', 'David Naif', 'Deddy Corbuzier', 'Deddy Mizwar', 'Denny Cagur', 'Desy Ratnasari', 'Dewi Sandra', 'Dhea Ananda', 'Dhini Aminarti', 'Dian Sastrowardoyo', 'Didik Nini Thowok']
             }
+            // Semua murid passwordnya 'murid111'
         };
 
-        // --- ELEMEN DOM ---
-        const schoolSelectionScreen = document.getElementById('school-selection-screen'), schoolNameInput = document.getElementById('school-name-input'), continueToAppBtn = document.getElementById('continue-to-app-btn'), schoolNameDisplay = document.getElementById('school-name-display');
-        const langIdBtn = document.getElementById('lang-id'), langEnBtn = document.getElementById('lang-en');
-        const howToUseSection = document.getElementById('how-to-use'), startBtn = document.getElementById('start-btn');
-        const appContent = document.getElementById('app-content'), roleSelection = document.getElementById('role-selection');
-        const studentRoleBtn = document.getElementById('student-role-btn'), teacherRoleBtn = document.getElementById('teacher-role-btn'), adminRoleBtn = document.getElementById('admin-role-btn');
-        const attendanceFormContainer = document.getElementById('attendance-form-container'), formTitle = document.getElementById('form-title'), nameInput = document.getElementById('name');
-        const classInputGroup = document.getElementById('class-input-group'), passwordInputGroup = document.getElementById('password-input-group'), passwordInput = document.getElementById('password');
-        const backToRoleBtn = document.getElementById('back-to-role'), backToMenuBtn = document.getElementById('back-to-menu-btn');
-        const presentBtn = document.getElementById('present-btn'), permissionBtn = document.getElementById('permission-btn'), loginBtn = document.getElementById('login-btn');
-        const attendanceResult = document.getElementById('attendance-result'), userResult = document.getElementById('user-result'), userStatus = document.getElementById('user-status');
-        const adminDashboard = document.getElementById('admin-dashboard'), adminStatus = document.getElementById('admin-status');
-        const studentList = document.getElementById('student-list'), teacherList = document.getElementById('teacher-list');
-        const tabStudents = document.getElementById('tab-students'), tabTeachers = document.getElementById('tab-teachers');
-        const studentsContent = document.getElementById('students-content'), teachersContent = document.getElementById('teachers-content');
-        const successAnimation = document.getElementById('success-animation'), successMessage = document.getElementById('success-message');
-        const customAlert = document.getElementById('custom-alert'), customAlertMessage = document.getElementById('custom-alert-message');
-        const reasonModal = document.getElementById('reason-modal'), reasonTextarea = document.getElementById('reason-textarea'), cancelReasonBtn = document.getElementById('cancel-reason-btn'), submitReasonBtn = document.getElementById('submit-reason-btn');
-        const photoModal = document.getElementById('photo-modal'), fullPhotoPreview = document.getElementById('full-photo-preview'), closePhotoModalBtn = document.getElementById('close-photo-modal');
-        const proofOptions = document.getElementById('proof-options'), usePhotoBtn = document.getElementById('use-photo-btn'), photoInput = document.getElementById('photo-input'), proofInfo = document.getElementById('proof-info'), photoPreview = document.getElementById('photo-preview');
-        const togglePasswordBtn = document.getElementById('toggle-password-btn');
-        let alertTimeout;
+        // --- Variabel Global ---
+        let currentUser = null; // Menyimpan data user yang sedang login
+        let tempAbsenData = {}; // Menyimpan data sementara untuk modal
         
-        // --- FUNGSI ---
-        function showCustomAlert(message) { clearTimeout(alertTimeout); customAlertMessage.textContent = message; customAlert.classList.remove('opacity-0'); setTimeout(() => { customAlert.classList.add('opacity-0'); }, 3000); }
-        
-        function setLanguage(lang) { 
-            document.documentElement.lang = lang; 
-            const trans = translations[lang]; 
-            document.querySelectorAll('[data-lang-key]').forEach(el => { 
-                const key = el.dataset.langKey;
-                if (trans[key]) el.textContent = trans[key];
-            }); 
-            document.querySelectorAll('input[data-lang-key]').forEach(el => {
-                const key = el.dataset.langKey;
-                if(trans[key]) el.placeholder = trans[key];
-            });
+        // --- Helper Functions ---
+        const el = id => document.getElementById(id);
+        const getTodayDateString = () => new Date().toISOString().split('T')[0];
+        const oneDayMs = 24 * 60 * 60 * 1000; // 1 hari dalam milidetik
+
+        /**
+         * Membuat ID unik untuk user berdasarkan perannya
+         * @param {object} user - Objek currentUser
+         * @returns {string} ID unik untuk database
+         */
+        function getUserId(user) {
+            if (!user) return null;
+            if (user.role === 'guru') return user.id; // cth: 'guru01'
+            if (user.role === 'admin') return user.id; // cth: 'admin01'
+            if (user.role === 'murid') return `murid_${user.kelas}_${user.nama.replace(/\s+/g, '-')}`; // cth: 'murid_10A_Aditya-Pratama'
+            return null;
         }
-        
-        function showSuccessAnimation(message) { successMessage.textContent = message; successAnimation.style.display = 'flex'; setTimeout(() => { successAnimation.style.display = 'none'; }, 2500); }
 
-        function populateClassOptions() {
-            const classSelect = document.getElementById('class-select');
-            classSelect.innerHTML = '';
-            const grades = [10, 11, 12];
-            const letters = 'ABCDEFGHIJKL'.split('');
+        /**
+         * Mengembalikan kelas warna Tailwind berdasarkan status absensi
+         * @param {string} status - Status absensi
+         * @returns {string} Kelas Tailwind
+         */
+        function getStatusColor(status) {
+            const s = (status || '').toLowerCase();
+            if (s.includes('hadir') || s.includes('terlambat')) return 'bg-green-500/80';
+            if (s === 'sakit') return 'bg-yellow-500/80';
+            if (s === 'izin') return 'bg-blue-500/80';
+            return 'bg-red-500/80'; // Alfa atau default
+        }
 
-            grades.forEach(grade => {
-                letters.forEach(letter => {
-                    const option = document.createElement('option');
-                    const className = `Kelas ${grade}-${letter}`;
-                    option.value = className;
-                    option.textContent = className;
-                    classSelect.appendChild(option);
+        /**
+         * Membuat HTML tabel
+         * @param {string[]} headers - Array string untuk header
+         * @param {string} body - HTML string untuk <tbody>
+         * @returns {string} HTML string untuk tabel
+         */
+        function createTable(headers, body) {
+            return `<table class="w-full text-left whitespace-nowrap">
+                <thead>
+                    <tr class="border-b border-white/30 text-sm uppercase">
+                        ${headers.map(h => `<th class="p-3 font-semibold">${h}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/20">${body}</tbody>
+            </table>`;
+        }
+
+        /**
+         * Meng-escape string untuk file CSV
+         * @param {string} str - String input
+         * @returns {string} String yang sudah di-escape
+         */
+        function escapeCSV(str) {
+            return `"${(str || '').replace(/"/g, '""')}"`;
+        }
+
+        /**
+         * Mencari detail user (nama, kelas) dari ID-nya
+         * @param {string} userId - ID unik user
+         * @returns {object} Objek berisi {nama, kelas} atau null
+         */
+        function findUserById(userId) {
+            if (!userId) return null;
+            if (userId.startsWith('murid_')) {
+                const parts = userId.split('_'); // [murid, kelas, Nama-Lengkap]
+                if (parts.length < 3) return null;
+                const kelas = parts[1];
+                const nama = parts.slice(2).join('_').replace(/-/g, ' '); // Handle nama dengan tanda hubung
+                return { nama, kelas };
+            } else if (userId.startsWith('guru')) {
+                const guru = DATA.guru.find(g => g.id === userId);
+                return { nama: guru ? guru.nama : 'Guru' };
+            } else if (userId === 'admin01') {
+                return { nama: DATA.admin[0].nama };
+            }
+            return null;
+        }
+
+        /**
+         * Menghitung rentetan (streak) hadir berturut-turut
+         * @param {Array} history - Array riwayat absensi user
+         * @returns {number} Jumlah hari streak
+         */
+        function calculateStreak(history) {
+            if (!history || history.length === 0) return 0;
+            
+            // Filter hanya 'hadir' atau 'terlambat' dan buat Set tanggal unik
+            const hadirDates = new Set(history
+                .filter(rec => rec.status.toLowerCase().includes('hadir') || rec.status.toLowerCase().includes('terlambat'))
+                .map(rec => rec.tanggal)
+            );
+            
+            if (hadirDates.size === 0) return 0;
+
+            // Urutkan tanggal dari yang terbaru
+            const sortedDates = Array.from(hadirDates).map(d => new Date(d)).sort((a, b) => b - a);
+            
+            let streak = 0;
+            let today = new Date(getTodayDateString());
+
+            // Cek apakah hari ini hadir
+            if (sortedDates[0].getTime() !== today.getTime()) {
+                return 0; // Streak terputus jika tidak hadir hari ini
+            }
+            
+            streak = 1;
+            let lastDate = sortedDates[0];
+
+            for (let i = 1; i < sortedDates.length; i++) {
+                const diff = lastDate.getTime() - sortedDates[i].getTime();
+                if (diff === oneDayMs) {
+                    // Tepat 1 hari sebelumnya
+                    streak++;
+                    lastDate = sortedDates[i];
+                } else if (diff > oneDayMs) {
+                    // Ada jeda, streak berhenti
+                    break;
+                }
+                // Jika diff = 0 (data duplikat), lewati saja
+            }
+            return streak;
+        }
+
+
+        // --- Logic Tampilan (UI) ---
+
+        /**
+         * Menampilkan loader di kontainer
+         * @param {string} containerId - ID elemen kontainer
+         * @param {string} message - Pesan loading
+         */
+        function showLoading(containerId, message = 'Memuat data...') {
+            el(containerId).innerHTML = `<div class="flex justify-center items-center p-10"><div class="loader"></div><p class="ml-4">${message}</p></div>`;
+        }
+
+        /**
+         * Mengganti tab aktif di dasbor
+         * @param {HTMLElement} clickedTab - Elemen tombol tab yang diklik
+         */
+        function switchTab(clickedTab) {
+            document.querySelectorAll('#dashboard-content button.tab-active').forEach(b => b.classList.remove('tab-active'));
+            clickedTab.classList.add('tab-active');
+        }
+
+        /**
+         * Memperbarui dropdown nama pengguna berdasarkan peran yang dipilih
+         */
+        function updateUsernameSelector() {
+            const role = el('role').value;
+            const usernameContainer = el('username-container');
+            const usernameSelect = el('username');
+            const passwordLabel = el('password-label');
+            
+            usernameSelect.innerHTML = ''; // Kosongkan dulu
+            
+            if (role === 'admin') {
+                usernameContainer.style.display = 'none';
+                passwordLabel.textContent = "2. Masukkan Password Admin";
+                return;
+            }
+            
+            usernameContainer.style.display = 'block';
+            passwordLabel.textContent = "3. Masukkan Password";
+
+            if (role === 'murid') {
+                Object.keys(DATA.murid).sort().forEach(kelas => {
+                    DATA.murid[kelas].forEach(nama => {
+                        const option = document.createElement('option');
+                        option.value = nama;
+                        option.textContent = `${nama} - ${kelas}`;
+                        option.className = 'text-black';
+                        usernameSelect.appendChild(option);
+                    });
                 });
-            });
-        }
-        
-        function renderAttendanceLists() { 
-            const lang = document.documentElement.lang; const trans = translations[lang]; 
-            studentList.innerHTML = studentAttendance.length === 0 ? `<li class="text-center text-gray-500 p-4">${lang === 'id' ? 'Belum ada data absensi siswa.' : 'No student attendance data yet.'}</li>` : '';
-            studentAttendance.forEach(record => {
-                const li = document.createElement('li'); li.className = 'flex justify-between items-start p-4 rounded-xl';
-                const points = studentPoints[record.name] || 0;
-                let pointsHTML = `<span class="px-2 py-1 text-xs font-bold text-indigo-800 bg-indigo-100 rounded-full">${points} ${trans.pointsLabel}</span>`;
-                let proofHTML = `<img src="${record.proof.data}" class="h-10 w-10 object-cover rounded-md cursor-pointer border" onclick="showFullPhoto('${record.proof.data}')">`;
-                let statusHTML = '';
-                if (record.status === 'Hadir') {
-                    if (record.attendance_status === trans.onTime) { li.classList.add('bg-green-50'); statusHTML = `<span class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full">${trans.onTime}</span>`; }
-                    else { li.classList.add('bg-orange-50'); statusHTML = `<span class="px-2 py-1 text-xs font-semibold text-orange-800 bg-orange-200 rounded-full">${trans.late}</span>`; }
-                    li.innerHTML = `<div><div class="flex items-center gap-2"><span class="font-medium text-gray-800">${record.name}</span>${pointsHTML}</div><span class="block text-xs text-gray-600 mt-1">${record.className}</span></div><div class="flex items-center gap-3 text-right">${proofHTML}<div><span class="text-sm font-semibold text-gray-700">${record.time}</span><div class="mt-1">${statusHTML}</div></div></div>`;
-                } else {
-                    li.classList.add('bg-yellow-50'); statusHTML = `<span class="px-2 py-1 text-xs font-semibold text-yellow-800 bg-yellow-200 rounded-full">${trans.permissionStatus}</span>`;
-                    li.innerHTML = `<div><div class="flex items-center gap-2"><span class="font-medium text-gray-800">${record.name}</span>${pointsHTML}</div><p class="text-xs text-gray-600 mt-1 italic">"${record.reason}"</p></div><div class="text-right"><span class="text-sm font-semibold text-gray-700">${record.time}</span><div class="mt-1">${statusHTML}</div></div>`;
-                }
-                studentList.appendChild(li);
-            });
-            teacherList.innerHTML = teacherAttendance.length === 0 ? `<li class="text-center text-gray-500 p-4">${lang === 'id' ? 'Belum ada data absensi guru.' : 'No teacher attendance data yet.'}</li>` : '';
-            teacherAttendance.forEach(record => {
-                const li = document.createElement('li'); li.className = 'flex justify-between items-start p-4 rounded-xl';
-                let statusHTML = '';
-                if (record.status === 'Hadir') {
-                    let proofHTML = `<img src="${record.proof.data}" class="h-10 w-10 object-cover rounded-md cursor-pointer border" onclick="showFullPhoto('${record.proof.data}')">`;
-                    if (record.attendance_status === trans.onTime) { li.classList.add('bg-green-50'); statusHTML = `<span class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full">${trans.onTime}</span>`; }
-                    else { li.classList.add('bg-orange-50'); statusHTML = `<span class="px-2 py-1 text-xs font-semibold text-orange-800 bg-orange-200 rounded-full">${trans.late}</span>`; }
-                    li.innerHTML = `<div class="font-medium text-gray-800">${record.name}</div><div class="flex items-center gap-3 text-right">${proofHTML}<div><span class="text-sm font-semibold text-gray-700">${record.time}</span><div class="mt-1">${statusHTML}</div></div></div>`;
-                } else {
-                    li.classList.add('bg-yellow-50'); statusHTML = `<span class="px-2 py-1 text-xs font-semibold text-yellow-800 bg-yellow-200 rounded-full">${trans.permissionStatus}</span>`;
-                    li.innerHTML = `<div><span class="font-medium text-gray-800">${record.name}</span><p class="text-xs text-gray-600 mt-1 italic">"${record.reason}"</p></div><div class="text-right"><span class="text-sm font-semibold text-gray-700">${record.time}</span><div class="mt-1">${statusHTML}</div></div>`;
-                }
-                teacherList.appendChild(li);
-            });
-        }
-        
-        function showFullPhoto(base64) { fullPhotoPreview.src = base64; photoModal.style.display = 'flex'; }
-        
-        function showPage(page) {
-            roleSelection.classList.add('hidden');
-            attendanceFormContainer.classList.add('hidden');
-            attendanceResult.classList.add('hidden');
-            if (page === 'role') roleSelection.classList.remove('hidden');
-            else if (page === 'form') attendanceFormContainer.classList.remove('hidden');
-            else if (page === 'result') attendanceResult.classList.remove('hidden');
-        }
-
-        function setupFormForRole(role) {
-            const lang = document.documentElement.lang; const trans = translations[lang];
-            currentUserRole = role;
-            classInputGroup.classList.add('hidden');
-            passwordInputGroup.classList.add('hidden');
-            document.getElementById('action-buttons').classList.add('hidden');
-            document.getElementById('admin-login-button').classList.add('hidden');
-            proofOptions.classList.add('hidden');
-            proofInfo.classList.add('hidden');
-            photoPreview.classList.add('hidden');
-            currentAttendanceProof = null;
-            nameInput.value = ''; passwordInput.value = '';
-
-            if (role === 'student') {
-                formTitle.textContent = trans.formTitleStudent;
-                classInputGroup.classList.remove('hidden');
-                proofOptions.classList.remove('hidden');
-                document.getElementById('proof-helper').classList.remove('hidden');
-                document.getElementById('action-buttons').classList.remove('hidden');
-                presentBtn.disabled = true;
-            } else if (role === 'teacher') {
-                formTitle.textContent = trans.formTitleTeacher;
-                proofOptions.classList.remove('hidden');
-                document.getElementById('proof-helper').classList.remove('hidden');
-                document.getElementById('action-buttons').classList.remove('hidden');
-                presentBtn.disabled = true;
-            } else if (role === 'admin') {
-                formTitle.textContent = trans.formTitleAdmin;
-                passwordInputGroup.classList.remove('hidden');
-                document.getElementById('admin-login-button').classList.remove('hidden');
+            } else if (role === 'guru') {
+                DATA.guru.forEach(guru => {
+                    const option = document.createElement('option');
+                    option.value = guru.nama;
+                    option.textContent = guru.waliKelas ? `${guru.nama} - Wali Kelas ${guru.waliKelas}` : `${guru.nama} - Guru Mata Pelajaran`;
+                    option.className = 'text-black';
+                    usernameSelect.appendChild(option);
+                });
             }
-            showPage('form');
         }
 
-        function processNameInput() {
-            const name = nameInput.value.trim();
-            const lang = document.documentElement.lang; const trans = translations[lang];
-            if (!name) { showCustomAlert(trans.nameRequired); return null; }
+        // --- Logic Autentikasi ---
 
-            const isAlreadyPresent = studentAttendance.some(rec => rec.name.toLowerCase() === name.toLowerCase()) ||
-                                   teacherAttendance.some(rec => rec.name.toLowerCase() === name.toLowerCase());
+        /**
+         * Menangani proses login
+         * @param {Event} e - Event submit form
+         */
+        async function handleLogin(e) {
+            e.preventDefault();
+            el('error-message').textContent = '';
             
-            if (isAlreadyPresent) { showCustomAlert(trans.alreadyPresent); return null; }
-            return name;
-        }
+            const { password: { value: password }, role: { value: role } } = el('login-form');
+            const username = el('username').value;
+            let userFound = null;
 
-        // --- EVENT LISTENERS ---
-        langIdBtn.addEventListener('click', () => setLanguage('id'));
-        langEnBtn.addEventListener('click', () => setLanguage('en'));
-        startBtn.addEventListener('click', () => { howToUseSection.classList.add('hidden'); appContent.classList.remove('hidden'); });
-        studentRoleBtn.addEventListener('click', () => setupFormForRole('student'));
-        teacherRoleBtn.addEventListener('click', () => setupFormForRole('teacher'));
-        adminRoleBtn.addEventListener('click', () => setupFormForRole('admin'));
-        backToRoleBtn.addEventListener('click', () => showPage('role'));
-        backToMenuBtn.addEventListener('click', () => { showPage('role'); userResult.classList.add('hidden'); adminDashboard.classList.add('hidden'); });
-        
-        continueToAppBtn.addEventListener('click', () => {
-            const schoolName = schoolNameInput.value.trim();
-            const lang = document.documentElement.lang;
-            if (!schoolName) { showCustomAlert(translations[lang].schoolNameRequired); return; }
-            schoolNameDisplay.textContent = schoolName;
-            schoolSelectionScreen.classList.add('hidden');
-            howToUseSection.classList.remove('hidden');
-        });
-
-        usePhotoBtn.addEventListener('click', () => photoInput.click());
-        photoInput.addEventListener('change', (e) => {
-            const file = e.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                currentAttendanceProof = {type: 'photo', data: event.target.result};
-                photoPreview.src = event.target.result;
-                photoPreview.classList.remove('hidden');
-                proofInfo.innerHTML = translations[document.documentElement.lang].photoSuccess;
-                proofInfo.classList.remove('hidden');
-                document.getElementById('proof-helper').classList.add('hidden');
-                presentBtn.disabled = false;
-            };
-            reader.readAsDataURL(file);
-        });
-        
-        presentBtn.addEventListener('click', () => {
-            const name = processNameInput(); if (!name) return;
-            const lang = document.documentElement.lang; const trans = translations[lang];
-            if (!currentAttendanceProof) { showCustomAlert(trans.noProof); return; }
-            
-            const now = new Date();
-            const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-            const att_status = (now.getHours() < 7 || (now.getHours() === 7 && now.getMinutes() === 0)) ? trans.onTime : trans.late;
-            
-            if (currentUserRole === 'student') {
-                const className = document.getElementById('class-select').value;
-                studentAttendance.push({ name, time, className, status: 'Hadir', attendance_status: att_status, reason: null, proof: currentAttendanceProof });
-                if (att_status === trans.onTime) {
-                    studentPoints[name] = (studentPoints[name] || 0) + 1;
+            if (role === 'admin') {
+                if (password === DATA.admin[0].password) {
+                    userFound = DATA.admin[0];
                 }
-                userStatus.innerHTML = trans.statusPresentStudent(name, time, className, att_status);
-            } else if (currentUserRole === 'teacher') {
-                teacherAttendance.push({ name, time, status: 'Hadir', attendance_status: att_status, reason: null, proof: currentAttendanceProof });
-                userStatus.innerHTML = trans.statusPresentTeacher(name, time, att_status);
+            } else if (role === 'guru') {
+                userFound = DATA.guru.find(u => u.nama.toLowerCase() === username.toLowerCase() && u.password === password);
+            } else if (role === 'murid') {
+                // Cari murid di semua kelas
+                for (const kelas in DATA.murid) {
+                    const muridInClass = DATA.murid[kelas].find(nama => nama.toLowerCase() === username.toLowerCase());
+                    if (muridInClass && password === 'murid111') { // Password default murid
+                        userFound = { nama: muridInClass, kelas };
+                        break;
+                    }
+                }
             }
-            
-            document.getElementById('user-result-title').textContent = trans.userResultTitle;
-            userResult.classList.remove('hidden'); adminDashboard.classList.add('hidden');
-            showSuccessAnimation(trans.attendanceSuccess);
-            showPage('result');
-        });
 
-        permissionBtn.addEventListener('click', () => {
-            const name = nameInput.value.trim();
-            const lang = document.documentElement.lang;
-            if (!name) { showCustomAlert(translations[lang].nameRequired); return; }
-            const isAlreadyPresent = studentAttendance.some(rec => rec.name.toLowerCase() === name.toLowerCase()) || teacherAttendance.some(rec => rec.name.toLowerCase() === name.toLowerCase());
-            if (isAlreadyPresent) { showCustomAlert(translations[lang].alreadyPresent); return; }
-            reasonModal.style.display = 'flex';
-        });
-
-        cancelReasonBtn.addEventListener('click', () => { reasonModal.style.display = 'none'; reasonTextarea.value = ''; });
-        
-        submitReasonBtn.addEventListener('click', () => {
-            const name = nameInput.value.trim();
-            const reason = reasonTextarea.value.trim();
-            const lang = document.documentElement.lang; const trans = translations[lang];
-            if (!reason) { showCustomAlert(trans.reasonRequired); return; }
-            
-            const now = new Date();
-            const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-            
-            if (currentUserRole === 'student') {
-                const className = document.getElementById('class-select').value;
-                studentAttendance.push({ name, time, className, status: 'Izin', attendance_status: null, reason, proof: null });
-                userStatus.innerHTML = trans.statusPermission(name, time, reason);
-            } else if (currentUserRole === 'teacher') {
-                teacherAttendance.push({ name, time, status: 'Izin', attendance_status: null, reason, proof: null });
-                userStatus.innerHTML = trans.statusPermission(name, time, reason);
-            }
-            
-            document.getElementById('user-result-title').textContent = trans.userResultTitle;
-            userResult.classList.remove('hidden'); adminDashboard.classList.add('hidden');
-            reasonTextarea.value = ''; reasonModal.style.display = 'none';
-            showSuccessAnimation(trans.permissionSuccess);
-            showPage('result');
-        });
-
-        loginBtn.addEventListener('click', () => {
-            const name = nameInput.value.trim();
-            const lang = document.documentElement.lang; const trans = translations[lang];
-             if (!name) { showCustomAlert(trans.nameRequired); return; }
-            if (passwordInput.value !== ADMIN_PASSWORD) { showCustomAlert(trans.wrongPassword); return; }
-            
-            const now = new Date();
-            const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-            adminDashboard.classList.remove('hidden'); userResult.classList.add('hidden');
-            adminStatus.innerHTML = trans.adminStatus(name, time);
-            renderAttendanceLists();
-            showSuccessAnimation(trans.attendanceSuccess);
-            showPage('result');
-        });
-
-        togglePasswordBtn.addEventListener('click', () => {
-            const icon = togglePasswordBtn.querySelector('i');
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
+            if (userFound) {
+                currentUser = { ...userFound, role };
+                el('welcome-page').classList.add('hidden');
+                el('login-page').classList.add('hidden');
+                await showDashboard();
             } else {
-                passwordInput.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
+                el('error-message').textContent = 'Kombinasi login salah.';
             }
-        });
-
-        closePhotoModalBtn.addEventListener('click', () => photoModal.style.display = 'none');
-        
-        function setActiveTab(clickedTab) {
-            [tabStudents, tabTeachers].forEach(tab => {
-                tab.classList.remove('tab-active', 'text-indigo-600', 'border-indigo-600');
-                tab.classList.add('text-gray-500');
-            });
-            clickedTab.classList.add('tab-active', 'text-indigo-600', 'border-indigo-600');
-            clickedTab.classList.remove('text-gray-500');
-            studentsContent.classList.toggle('hidden', clickedTab !== tabStudents);
-            teachersContent.classList.toggle('hidden', clickedTab !== tabTeachers);
         }
 
-        tabStudents.addEventListener('click', () => setActiveTab(tabStudents));
-        tabTeachers.addEventListener('click', () => setActiveTab(tabTeachers));
-        
-        document.addEventListener('DOMContentLoaded', () => {
-             setLanguage('id');
-             populateClassOptions();
-             [reasonModal, photoModal].forEach(modal => modal.style.display = 'none');
-        });
+        /**
+         * Menangani proses logout
+         */
+        function handleLogout() {
+            currentUser = null;
+            el('login-form').reset();
+            updateUsernameSelector();
+            el('dashboard-page').classList.add('hidden');
+            el('welcome-page').classList.remove('hidden');
+        }
+
+        // --- Logic Dashboard Utama ---
+
+        /**
+         * Menampilkan dasbor berdasarkan peran pengguna
+         */
+        async function showDashboard() {
+            el('login-page').classList.add('hidden');
+            el('dashboard-page').classList.remove('hidden');
+            
+            // Set pesan selamat datang
+            el('welcome-message').textContent = `Halo, ${currentUser.nama}!`;
+            if (currentUser.waliKelas) {
+                el('welcome-message').textContent += ` (Wali Kelas ${currentUser.waliKelas})`;
+            }
+            
+            showLoading('dashboard-content');
+
+            // Arahkan ke tampilan yang sesuai
+            if (currentUser.role === 'admin') {
+                await renderAdminReport();
+            } else if (currentUser.waliKelas) { // Hanya guru wali kelas
+                await renderWaliKelasReport();
+            } else { // Murid dan Guru non-wali kelas
+                await renderUserAbsenPanel();
+            }
+        }
+
+        /**
+         * Menampilkan panel absensi untuk murid dan guru
+         */
+        async function renderUserAbsenPanel() {
+            const userId = getUserId(currentUser);
+            const { data, error } = await supabaseClient
+                .from('absensi')
+                .select('*')
+                .eq('user_id', userId)
+                .eq('tanggal', getTodayDateString())
+                .single();
+
+            if (error && error.code !== 'PGRST116') { // PGRST116 = not found
+                el('dashboard-content').innerHTML = `<p class="text-red-400">Gagal memuat status: ${error.message}</p>`;
+                return;
+            }
+
+            if (data) {
+                // Sudah absen, tampilkan status
+                await renderStatusView(data, currentUser.kelas);
+            } else {
+                // Belum absen, tampilkan tombol
+                el('dashboard-content').innerHTML = `
+                <div class="glass-card p-8 rounded-xl shadow-md max-w-md mx-auto text-center">
+                    <h3 class="text-xl font-bold mb-6">Lakukan Absensi Hari Ini</h3>
+                    <div class="flex justify-center space-x-4">
+                        <button id="hadir-btn" class="bg-green-500 hover:bg-green-600 font-bold py-3 px-6 rounded-lg transition transform hover:scale-105">Hadir</button>
+                        <button id="sakit-btn" class="bg-yellow-500 hover:bg-yellow-600 font-bold py-3 px-6 rounded-lg transition transform hover:scale-105">Sakit</button>
+                        <button id="izin-btn" class="bg-blue-500 hover:bg-blue-600 font-bold py-3 px-6 rounded-lg transition transform hover:scale-105">Izin</button>
+                    </div>
+                </div>`;
+                
+                el('hadir-btn').onclick = () => handleUserAbsen('hadir');
+                el('sakit-btn').onclick = () => handleUserAbsen('sakit');
+                el('izin-btn').onclick = () => handleUserAbsen('izin');
+            }
+        }
+
+        /**
+         * Menampilkan status setelah user absen
+         * @param {object} data - Data absensi dari Supabase
+         * @param {string} [kelas] - Kelas murid (opsional)
+         */
+        async function renderStatusView(data, kelas = null) {
+            const userId = getUserId(currentUser);
+            showLoading('dashboard-content', 'Menghitung statistik...');
+
+            // Ambil SEMUA data absensi untuk menghitung statistik DAN streak
+            const { data: allHistory, error } = await supabaseClient
+                .from('absensi')
+                .select('status, tanggal')
+                .eq('user_id', userId)
+                .order('tanggal', { ascending: false });
+
+            const stats = { hadir: 0, sakit: 0, izin: 0, alfa: 0 };
+            if (allHistory) {
+                allHistory.forEach(record => {
+                    const status = record.status.toLowerCase();
+                    if (status.includes('hadir') || status.includes('terlambat')) stats.hadir++;
+                    else if (status === 'sakit') stats.sakit++;
+                    else if (status === 'izin') stats.izin++;
+                });
+            }
+
+            // Hitung streak (api)
+            const streak = calculateStreak(allHistory);
+            const streakHtml = streak > 1 ? `<div class="streak-display mt-4">🔥 ${streak} Hari Rentetan Hadir!</div>` : '';
+
+            // Tampilkan statistik total
+            const statsHtml = `
+            <div class="mt-6 pt-4 border-t border-white/20 text-left grid grid-cols-3 gap-2">
+                <p>✔️ Hadir: <strong>${stats.hadir}</strong></p>
+                <p>🟡 Sakit: <strong>${stats.sakit}</strong></p>
+                <p>🔵 Izin: <strong>${stats.izin}</strong></p>
+            </div>`;
+
+            el('dashboard-content').innerHTML = `
+            <div class="glass-card p-8 rounded-xl shadow-md max-w-lg mx-auto text-center">
+                <h3 class="text-xl font-bold mb-2">Terima Kasih Telah Absen!</h3>
+                ${kelas ? `<p class="text-gray-300 mb-6">Kelas: ${kelas}</p>` : ''}
+                
+                <div class="my-4">
+                    <span class="px-6 py-3 text-2xl font-bold rounded-full ${getStatusColor(data.status)}">${data.status}</span>
+                </div>
+                
+                ${data.created_at ? `<p class="text-gray-200">Pada pukul: <strong>${new Date(data.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</strong></p>` : ''}
+                ${data.keterangan ? `<p class="mt-2 text-gray-200"><strong>Keterangan:</strong> ${data.keterangan}</p>` : ''}
+                
+                ${streakHtml} <!-- Tampilkan Streak -->
+                ${statsHtml} <!-- Tampilkan Statistik -->
+            </div>`;
+        }
+
+        // --- Logic Absensi & Modal ---
+
+        /**
+         * Menangani klik tombol absen (Hadir, Sakit, Izin)
+         * @param {string} type - Tipe absensi ('hadir', 'sakit', 'izin')
+         */
+        function handleUserAbsen(type) {
+            tempAbsenData = {}; // Reset
+            let status = '';
+
+            if (type === 'hadir') {
+                const jamHadir = new Date().getHours();
+                status = (jamHadir >= 7) ? 'Terlambat' : 'Hadir Tepat Waktu'; // Anggap jam 7 batasnya
+                tempAbsenData = { status, keterangan: null };
+                submitAbsen(); // Langsung kirim
+            } else {
+                status = (type === 'sakit') ? 'Sakit' : 'Izin';
+                tempAbsenData = { status };
+                // Tampilkan modal untuk keterangan
+                el('modal-keterangan').value = '';
+                el('keterangan-modal').classList.remove('hidden');
+            }
+        }
+
+        /**
+         * Mengirim data absensi ke Supabase
+         */
+        async function submitAbsen() {
+            const userId = getUserId(currentUser);
+            const today = getTodayDateString();
+            
+            // Tampilkan loader di modal atau dasbor
+            if (!el('keterangan-modal').classList.contains('hidden')) {
+                el('keterangan-submit-text').classList.add('hidden');
+                el('keterangan-submit-loader').classList.remove('hidden');
+            } else {
+                showLoading('dashboard-content', 'Mengirim absensi...');
+            }
+
+            const { data, error } = await supabaseClient
+                .from('absensi')
+                .insert({
+                    user_id: userId,
+                    tanggal: today,
+                    status: tempAbsenData.status,
+                    keterangan: tempAbsenData.keterangan
+                })
+                .select()
+                .single();
+
+            // Sembunyikan loader modal
+            if (!el('keterangan-modal').classList.contains('hidden')) {
+                el('keterangan-modal').classList.add('hidden');
+                el('keterangan-submit-text').classList.remove('hidden');
+                el('keterangan-submit-loader').classList.add('hidden');
+            }
+
+            if (error) {
+                el('dashboard-content').innerHTML = `<p class="text-red-400">Gagal mengirim absen: ${error.message}</p>`;
+            } else {
+                await renderStatusView(data, currentUser.kelas); // Tampilkan status
+            }
+        }
+
+        /**
+         * Menutup modal keterangan
+         */
+        function closeModal() {
+            el('keterangan-modal').classList.add('hidden');
+            el('modal-keterangan').value = '';
+            tempAbsenData = {};
+        }
+
+        // --- Logic Laporan (Admin & Wali Kelas) ---
+
+        /**
+         * Menampilkan dasbor Admin (Laporan Murid & Guru)
+         */
+        async function renderAdminReport() { 
+            el('dashboard-content').innerHTML = `
+                <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+                    <div class="flex border-b border-white/20">
+                        <button id="tab-murid" class="py-3 px-6 font-semibold border-b-2 tab-active">Laporan Murid</button>
+                        <button id="tab-guru" class="py-3 px-6 font-semibold border-b-2 border-transparent text-gray-300 hover:text-white">Laporan Guru</button>
+                    </div>
+                    <button id="export-csv-btn" class="bg-green-600/80 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                        Ekspor CSV
+                    </button>
+                </div>
+                
+                <div id="gamification-container" class="gamification-container"></div>
+                
+                <div id="tab-content" class="overflow-y-auto max-h-[75vh]"></div>`;
+            
+            const exportBtn = el('export-csv-btn');
+            
+            el('tab-murid').onclick = async (e) => { 
+                switchTab(e.target); 
+                exportBtn.style.display = 'flex'; // Tampilkan tombol
+                await renderMuridReport(); 
+            };
+            el('tab-guru').onclick = async (e) => { 
+                switchTab(e.target); 
+                exportBtn.style.display = 'none'; // Sembunyikan tombol
+                await renderGuruReport(); 
+            };
+            
+            el('export-csv-btn').onclick = () => exportReportToCSV('admin');
+            
+            exportBtn.style.display = 'flex'; // Tampilkan by default
+            await renderMuridReport(); // Tampilkan laporan murid dulu
+        }
+
+        /**
+         * Mengambil dan memproses data untuk laporan
+         * @returns {object} Objek berisi { stats, todayData, palingPagi }
+         */
+        async function processReportData() {
+            // Ambil semua data absensi
+            const { data, error } = await supabaseClient.from('absensi').select('*');
+            if (error) { throw error; }
+
+            const stats = {}; // { userId: { hadir: 0, sakit: 0, ... } }
+            const todayData = {}; // { userId: { status, ... } }
+            const today = getTodayDateString();
+
+            // Variabel untuk gamifikasi
+            let palingPagi = null; // { nama, kelas, waktu }
+
+            for (const record of data) {
+                // Inisialisasi statistik jika belum ada
+                if (!stats[record.user_id]) {
+                    stats[record.user_id] = { hadir: 0, sakit: 0, izin: 0, alfa: 0, terlambat: 0 };
+                }
+
+                // Hitung statistik total
+                const status = record.status.toLowerCase();
+                if (status === 'hadir tepat waktu') stats[record.user_id].hadir++;
+                else if (status === 'terlambat') stats[record.user_id].terlambat++;
+                else if (status === 'sakit') stats[record.user_id].sakit++;
+                else if (status === 'izin') stats[record.user_id].izin++;
+                else stats[record.user_id].alfa++; // Default
+
+                // Cek data hari ini
+                if (record.tanggal === today) {
+                    todayData[record.user_id] = record;
+
+                    // Cek paling pagi (hanya untuk murid)
+                    if (record.user_id.startsWith('murid_') && (status === 'hadir tepat waktu' || status === 'terlambat')) {
+                        const recordTime = new Date(record.created_at).getTime();
+                        if (!palingPagi || recordTime < palingPagi.waktu) {
+                            const userDetail = findUserById(record.user_id);
+                            palingPagi = { 
+                                nama: userDetail ? userDetail.nama : '???', 
+                                kelas: userDetail ? userDetail.kelas : '???',
+                                waktu: recordTime 
+                            };
+                        }
+                    }
+                }
+            }
+            return { stats, todayData, palingPagi };
+        }
+
+        /**
+         * Menampilkan laporan murid (untuk Admin)
+         */
+        async function renderMuridReport() {
+            showLoading('tab-content', 'Memuat laporan murid...');
+            el('gamification-container').innerHTML = ''; // Kosongkan gamifikasi
+            try {
+                const { stats, todayData, palingPagi } = await processReportData();
+                
+                // Tampilkan Papan Peringkat (Gamifikasi)
+                renderGamification(stats, palingPagi);
+
+                let tableBody = '';
+                // Loop melalui SEMUA murid di data JS
+                Object.keys(DATA.murid).sort().forEach(kelas => {
+                    DATA.murid[kelas].forEach(nama => {
+                        const user = { nama, kelas, role: 'murid' };
+                        const userId = getUserId(user);
+                        const todayRecord = todayData[userId];
+                        
+                        let status = 'Alfa';
+                        let keterangan = '';
+                        let color = getStatusColor('alfa');
+                        
+                        if (todayRecord) {
+                            status = todayRecord.status;
+                            keterangan = todayRecord.keterangan || '';
+                            color = getStatusColor(status);
+                        }
+                        
+                        // [FIX] Pastikan 'keterangan' tidak null sebelum replace
+                        const keteranganAman = keterangan || '';
+
+                        tableBody += `
+                        <tr class="hover:bg-white/10">
+                            <td class="p-3 font-medium">${nama}</td>
+                            <td class="p-3">${kelas}</td>
+                            <td class="p-3"><span class="px-3 py-1 rounded-full text-sm font-medium ${color}">${status}</span></td>
+                            <td class="p-3 text-gray-300">${keterangan}</td>
+                            <td class="p-3 text-right">
+                                <!-- Tombol Edit -->
+                                <span class="btn-edit" 
+                                      data-userid="${userId}" 
+                                      data-nama="${nama}" 
+                                      data-status="${status}" 
+                                      data-keterangan="${keteranganAman.replace(/"/g, '&quot;')}">
+                                    Edit
+                                </span>
+                            </td>
+                        </tr>`;
+                    });
+                });
+                const tableHeaders = ['Nama', 'Kelas', 'Status Hari Ini', 'Keterangan', 'Aksi'];
+                el('tab-content').innerHTML = createTable(tableHeaders, tableBody);
+
+            } catch (err) {
+                console.error("Error di renderMuridReport:", err); // [FIX] Tambah logging
+                el('tab-content').innerHTML = `<p class="text-red-400">Gagal memuat data: ${err.message}</p>`;
+            }
+        }
+
+        /**
+         * Menampilkan laporan guru (untuk Admin)
+         */
+        async function renderGuruReport() {
+            showLoading('tab-content', 'Memuat laporan guru...');
+            el('gamification-container').innerHTML = ''; // Kosongkan gamifikasi
+            try {
+                const { todayData } = await processReportData();
+                let tableBody = '';
+                DATA.guru.forEach(guru => {
+                    const userId = getUserId({ ...guru, role: 'guru' });
+                    const todayRecord = todayData[userId];
+                    let status = 'Alfa';
+                    let keterangan = '';
+                    let color = getStatusColor('alfa');
+                    if (todayRecord) {
+                        status = todayRecord.status;
+                        keterangan = todayRecord.keterangan || '';
+                        color = getStatusColor(status);
+                    }
+                    tableBody += `
+                    <tr class="hover:bg-white/10">
+                        <td class="p-3 font-medium">${guru.nama}</td>
+                        <td class="p-3">${guru.waliKelas ? `Wali Kelas ${guru.waliKelas}` : 'Guru Mata Pelajaran'}</td>
+                        <td class="p-3"><span class="px-3 py-1 rounded-full text-sm font-medium ${color}">${status}</span></td>
+                        <td class="p-3 text-gray-300">${keterangan}</td>
+                    </tr>`;
+                });
+                const tableHeaders = ['Nama Guru', 'Peran', 'Status Hari Ini', 'Keterangan'];
+                el('tab-content').innerHTML = createTable(tableHeaders, tableBody);
+            } catch (err) {
+                el('tab-content').innerHTML = `<p class="text-red-400">Gagal memuat data: ${err.message}</p>`;
+            }
+        }
+
+        /**
+         * Menampilkan laporan Wali Kelas (hanya murid di kelasnya)
+         */
+        async function renderWaliKelasReport() {
+            const kelas = currentUser.waliKelas;
+            showLoading('dashboard-content', `Memuat laporan kelas ${kelas}...`);
+            try {
+                const { stats, todayData, palingPagi } = await processReportData();
+                
+                // Tampilkan Papan Peringkat (Gamifikasi)
+                renderGamification(stats, palingPagi, kelas); // Filter berdasarkan kelas
+
+                let tableBody = '';
+                const muridDiKelas = DATA.murid[kelas] || [];
+
+                muridDiKelas.forEach(nama => {
+                    const user = { nama, kelas, role: 'murid' };
+                    const userId = getUserId(user);
+                    const todayRecord = todayData[userId];
+                    let status = 'Alfa';
+                    let keterangan = '';
+                    let color = getStatusColor('alfa');
+                    if (todayRecord) {
+                        status = todayRecord.status;
+                        keterangan = todayRecord.keterangan || '';
+                        color = getStatusColor(status);
+                    }
+                    tableBody += `
+                    <tr class="hover:bg-white/10">
+                        <td class="p-3 font-medium">${nama}</td>
+                        <td class="p-3"><span class="px-3 py-1 rounded-full text-sm font-medium ${color}">${status}</span></td>
+                        <td class="p-3 text-gray-300">${keterangan}</td>
+                    </tr>`;
+                });
+
+                const tableHeaders = ['Nama Murid', 'Status Hari Ini', 'Keterangan'];
+                const exportButton = `
+                    <div class="text-right mb-4">
+                        <button id="export-csv-btn-walas" class="bg-green-600/80 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition-all ml-auto">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            Ekspor CSV Kelas ${kelas}
+                        </button>
+                    </div>`;
+
+                const gamificationContainer = `<div id="gamification-container" class="gamification-container"></div>`;
+
+                el('dashboard-content').innerHTML = gamificationContainer + exportButton + createTable(tableHeaders, tableBody);
+                el('export-csv-btn-walas').onclick = () => exportReportToCSV('walas', kelas);
+
+                // Muat ulang data gamifikasi setelah DOM di-render
+                renderGamification(stats, palingPagi, kelas);
+
+            } catch (err) {
+                el('dashboard-content').innerHTML = `<p class="text-red-400">Gagal memuat data: ${err.message}</p>`;
+            }
+        }
+
+        /**
+         * Menampilkan panel gamifikasi (Papan Peringkat & Absen Pagi)
+         * @param {object} stats - Objek statistik dari processReportData
+         * @param {object} palingPagi - Objek palingPagi dari processReportData
+         * @param {string} [filterKelas] - Filter hanya untuk kelas ini (untuk Wali Kelas)
+         */
+        function renderGamification(stats, palingPagi, filterKelas = null) {
+            const container = el('gamification-container');
+            if (!container) return; // Kontainer tidak ada di DOM
+
+            // 1. Hitung Papan Peringkat
+            const leaderboard = Object.keys(stats)
+                .filter(userId => userId.startsWith('murid_')) // Hanya murid
+                .filter(userId => {
+                    if (!filterKelas) return true; // Admin: semua kelas
+                    const userDetail = findUserById(userId);
+                    return userDetail && userDetail.kelas === filterKelas; // Walas: hanya kelasnya
+                })
+                .map(userId => {
+                    const userDetail = findUserById(userId);
+                    const totalHadir = (stats[userId].hadir || 0) + (stats[userId].terlambat || 0);
+                    return {
+                        nama: userDetail ? userDetail.nama : '???',
+                        kelas: userDetail ? userDetail.kelas : '???',
+                        totalHadir: totalHadir
+                    };
+                })
+                .sort((a, b) => b.totalHadir - a.totalHadir) // Urutkan
+                .slice(0, 3); // Ambil 3 teratas
+
+            // 2. Tampilkan Papan Peringkat
+            let leaderboardHtml = '<h4>🏆 Papan Peringkat (Total Hadir)</h4><ol class="list-decimal list-inside">';
+            if (leaderboard.length > 0) {
+                leaderboard.forEach((murid, index) => {
+                    leaderboardHtml += `<li><strong>${murid.nama}</strong> (${murid.kelas}) - ${murid.totalHadir} hari</li>`;
+                });
+            } else {
+                leaderboardHtml += '<p class="text-gray-400">Belum ada data.</p>';
+            }
+            leaderboardHtml += '</ol>';
+
+            // 3. Tampilkan Absen Paling Pagi
+            let palingPagiHtml = '<h4>🏅 Absen Paling Pagi (Hari Ini)</h4>';
+            if (palingPagi) {
+                // Jika Walas, cek apakah murid paling pagi ada di kelasnya
+                if (filterKelas && palingPagi.kelas !== filterKelas) {
+                    palingPagiHtml += '<p class="text-gray-400">Belum ada data di kelas Anda.</p>';
+                } else {
+                    palingPagiHtml += `<p><strong>${palingPagi.nama}</strong> (${palingPagi.kelas})<br>
+                                       <span class="text-sm text-gray-300">Pukul: ${new Date(palingPagi.waktu).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span></p>`;
+                }
+            } else {
+                 palingPagiHtml += '<p class="text-gray-400">Belum ada yang absen hadir.</p>';
+            }
+
+            // Gabungkan
+            container.innerHTML = `
+                <div class="stat-card">${leaderboardHtml}</div>
+                <div class="stat-card">${palingPagiHtml}</div>
+            `;
+        }
+
+        // --- Logic Ekspor & Edit ---
+
+        /**
+         * Mengekspor laporan ke file CSV
+         * @param {string} mode - 'admin' atau 'walas'
+         * @param {string} [kelas] - Kelas (jika mode 'walas')
+         */
+        async function exportReportToCSV(mode, kelas = null) {
+            showLoading(mode === 'admin' ? 'tab-content' : 'dashboard-content', 'Mempersiapkan data ekspor...');
+            
+            try {
+                const { stats, todayData } = await processReportData();
+                let csvContent = "data:text/csv;charset=utf-8,";
+                let headers = ["Nama", "Kelas", "Status Hari Ini", "Keterangan", "Total Hadir", "Total Terlambat", "Total Sakit", "Total Izin"];
+                csvContent += headers.join(",") + "\r\n";
+
+                let usersToExport = [];
+
+                if (mode === 'admin') {
+                    // Admin: Semua murid
+                    Object.keys(DATA.murid).sort().forEach(k => {
+                        DATA.murid[k].forEach(nama => usersToExport.push({ nama, kelas: k, role: 'murid' }));
+                    });
+                } else if (mode === 'walas' && kelas) {
+                    // Wali Kelas: Murid di kelasnya saja
+                    (DATA.murid[kelas] || []).forEach(nama => usersToExport.push({ nama, kelas: kelas, role: 'murid' }));
+                }
+
+                usersToExport.forEach(user => {
+                    const userId = getUserId(user);
+                    const todayRecord = todayData[userId];
+                    const userStats = stats[userId] || { hadir: 0, terlambat: 0, sakit: 0, izin: 0 };
+                    
+                    const status = todayRecord ? todayRecord.status : 'Alfa';
+                    const keterangan = todayRecord ? todayRecord.keterangan : '';
+
+                    let row = [
+                        user.nama,
+                        user.kelas,
+                        status,
+                        keterangan,
+                        userStats.hadir,
+                        userStats.terlambat,
+                        userStats.sakit,
+                        userStats.izin
+                    ].map(escapeCSV).join(",");
+                    
+                    csvContent += row + "\r\n";
+                });
+
+                // Buat link download
+                var encodedUri = encodeURI(csvContent);
+                var link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `laporan_absensi_${kelas || 'semua'}_${getTodayDateString()}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Kembalikan tampilan
+                if (mode === 'admin') await renderMuridReport();
+                else if (mode === 'walas') await renderWaliKelasReport();
+
+            } catch (err) {
+                if (mode === 'admin') el('tab-content').innerHTML = `<p class="text-red-400">Gagal ekspor: ${err.message}</p>`;
+                else el('dashboard-content').innerHTML = `<p class="text-red-400">Gagal ekspor: ${err.message}</p>`;
+            }
+        }
+
+        /**
+         * Menampilkan modal untuk mengedit absensi murid
+         * @param {Event} e - Event klik
+         */
+        function showEditModal(e) {
+            const btn = e.target;
+            const { userid, nama, status, keterangan } = btn.dataset;
+
+            el('edit-user-id').value = userid;
+            el('edit-nama').value = nama;
+            
+            // Set status di dropdown
+            if (status.toLowerCase() === 'alfa') {
+                el('edit-status').value = 'Alfa';
+            } else {
+                el('edit-status').value = status;
+            }
+            
+            el('edit-keterangan').value = keterangan;
+            el('edit-modal').classList.remove('hidden');
+        }
+
+        /**
+         * Menutup modal edit
+         */
+        function closeEditModal() {
+            el('edit-modal').classList.add('hidden');
+            el('edit-user-id').value = '';
+            el('edit-nama').value = '';
+            el('edit-keterangan').value = '';
+        }
+
+        /**
+         * Menangani pengiriman data dari modal edit
+         */
+        async function handleEditSubmit() {
+            const userId = el('edit-user-id').value;
+            const status = el('edit-status').value;
+            const keterangan = el('edit-keterangan').value;
+            const today = getTodayDateString();
+
+            el('edit-submit-text').classList.add('hidden');
+            el('edit-submit-loader').classList.remove('hidden');
+
+            try {
+                if (status === 'Alfa') {
+                    // Hapus data absensi hari ini
+                    const { error } = await supabaseClient
+                        .from('absensi')
+                        .delete()
+                        .eq('user_id', userId)
+                        .eq('tanggal', today);
+                    if (error) throw error;
+                } else {
+                    // Update atau Insert (Upsert) data
+                    const { error } = await supabaseClient
+                        .from('absensi')
+                        .upsert({
+                            user_id: userId,
+                            tanggal: today,
+                            status: status,
+                            keterangan: keterangan
+                        }, {
+                            onConflict: 'user_id, tanggal' // Kunci unik
+                        });
+                    if (error) throw error;
+                }
+                
+                // Sukses
+                closeEditModal();
+                await renderMuridReport(); // Muat ulang laporan
+
+            } catch (err) {
+                alert(`Gagal menyimpan: ${err.message}`);
+            } finally {
+                el('edit-submit-text').classList.remove('hidden');
+                el('edit-submit-loader').classList.add('hidden');
+            }
+        }
+
+        // --- Event Listeners ---
+        window.onload = () => {
+            // Halaman Awal
+            el('start-btn').onclick = () => { el('welcome-page').classList.add('hidden'); el('login-page').classList.remove('hidden'); };
+            
+            // Halaman Login
+            el('login-form').onsubmit = handleLogin;
+            el('role').onchange = updateUsernameSelector;
+            el('toggle-password').onclick = () => {
+                const pass = el('password');
+                const isHidden = pass.type === 'password';
+                pass.type = isHidden ? 'text' : 'password';
+                el('eye-icon').classList.toggle('hidden', isHidden);
+                el('eye-off-icon').classList.toggle('hidden', !isHidden);
+            };
+            
+            // Halaman Dasbor
+            el('logout-btn').onclick = handleLogout;
+            el('current-date').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            // Modal Keterangan
+            el('modal-cancel').onclick = closeModal;
+            el('modal-submit-keterangan').onclick = () => {
+                tempAbsenData.keterangan = el('modal-keterangan').value;
+                submitAbsen();
+            };
+
+            // Modal Edit
+            el('modal-edit-cancel').onclick = closeEditModal;
+            el('modal-edit-submit').onclick = handleEditSubmit;
+
+            // Event listener untuk tombol Edit (menggunakan event delegation)
+            el('app-container').addEventListener('click', (e) => {
+                if (e.target.classList.contains('btn-edit')) {
+                    showEditModal(e);
+                }
+            });
+
+            // Init
+            updateUsernameSelector(); // Siapkan dropdown saat load
+        };
     </script>
 </body>
 </html>
