@@ -216,4 +216,1248 @@
             <p class="text-sm text-gray-400 mt-2">Ini hanya akan menyembunyikan mereka untuk sementara. Mereka akan muncul lagi saat halaman di-refresh.</p>
             <div class="mt-6 flex justify-end space-x-3">
                 <button id="modal-remove-cancel" class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded-lg">Batal</button>
-                <button id="modal-remove-submit" class="bg-red-600 hover:bg-red-700 px-4 py
+                <button id="modal-remove-submit" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Riwayat Absensi -->
+    <div id="history-modal" class="fixed inset-0 z-50 flex items-center justify-center modal-backdrop hidden">
+        <div class="bg-gray-800 text-white rounded-lg shadow-xl p-6 w-full max-w-lg fade-in">
+            <h3 class="text-xl font-bold mb-4">Riwayat Absensi untuk <span id="history-nama" class="text-indigo-300"></span></h3>
+            <div id="history-content" class="overflow-y-auto max-h-[60vh] bg-gray-900/50 p-4 rounded-lg">
+                <!-- Konten riwayat akan dimuat di sini -->
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button id="modal-history-cancel" class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded-lg">Tutup</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // --- APLIKASI ABSENSI V1.4 (FINAL STABLE) ---
+        
+        // === KONFIGURASI SUPABASE (WAJIB DIISI!) ===
+        const SUPABASE_URL = 'https://mqxniexpnxdoeffcqmtz.supabase.co'; // Ganti dengan Project URL Anda
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xeG5pZXhwbnhkb2VmZmNxbXR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyOTc4OTQsImV4cCI6MjA3NTg3Mzg5NH0.pEMojPnEbsUhi3oDD35mEALxJXGtXarMahhdAhct2jA'; // Ganti dengan anon public Key Anda
+        // ===========================================
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Data Roster Pengguna (Nama, Kelas, Password)
+        const DATA = {
+            admin: [{ id: 'admin01', nama: 'Admin', password: 'admin123' }],
+            guru: [
+                { id: 'guru01', nama: 'Budi Santoso', waliKelas: '10A' },
+                { id: 'guru02', nama: 'Siti Aminah', waliKelas: '10B' },
+                { id: 'guru03', nama: 'Agus Setiawan', waliKelas: '10C' },
+                { id: 'guru04', nama: 'Dewi Lestari', waliKelas: '11A' },
+                { id: 'guru05', nama: 'Eko Prasetyo', waliKelas: '11B' },
+                { id: 'guru06', nama: 'Fitriani', waliKelas: '11C' },
+                { id: 'guru07', nama: 'Gunawan', waliKelas: '12A' },
+                { id: 'guru08', nama: 'Herlina', waliKelas: '12B' },
+                { id: 'guru09', nama: 'Iwan Fals', waliKelas: '12C' },
+                { id: 'guru10', nama: 'Joko Susilo' },
+                { id: 'guru11', nama: 'Kartika' },
+                { id: 'guru12', nama: 'Lina Marlina' },
+                { id: 'guru13', nama: 'Muhammad Ali' },
+                { id: 'guru14', nama: 'Nina ardiana' },
+                { id: 'guru15', nama: 'Putri Wulandari' },
+                { id: 'guru16', nama: 'Rahmat Hidayat' },
+                { id: 'guru17', nama: 'Sri Wahyuni' },
+                { id: 'guru18', nama: 'Taufik Hidayat' },
+                { id: 'guru19', nama: 'Utami' },
+                { id: 'guru20', nama: 'Yusuf Maulana' }
+            ].map(g => ({ ...g, password: 'guru111' })),
+            murid: {
+                '10A': ['Aditya Pratama', 'Aisha Putri', 'Akbar Maulana', 'Amanda Sari', 'Andrean Wijaya', 'Anita Dewi', 'Arief Rahman', 'Bella Christin', 'Bima Sakti', 'Cahaya Ningrum', 'Citra Kirana', 'Dani Ramadhan', 'Dian Permata', 'Dimas Anggara', 'Doni Setiawan', 'Eka Yulianti', 'Elang Perkasa', 'Fajar Sidik', 'Farah Diba', 'Febri Haryadi', 'Fitriyah', 'Galih Ginanjar'],
+                '10B': ['Gita Gutawa', 'Hadi Santoso', 'Hanifah', 'Haris Setiawan', 'Indah Permatasari', 'Irfan Hakim', 'Isyana Sarasvati', 'Jajang Nurjaman', 'Joko Anwar', 'Kevin Sanjaya', 'Lala Karmela', 'Laura Basuki', 'Luna Maya', 'Maher Zain', 'Maria Selena', 'Mario Teguh', 'Melly Goeslaw', 'Morgan Oey', 'Nadiem Makarim', 'Nadya Hutagalung', 'Nicholas Saputra', 'Nikita Willy'],
+                '10C': ['Gilang Dirga', 'Gisella Anastasia', 'Hamish Daud', 'Herjunot Ali', 'Iko Uwais', 'Indra Bekti', 'Indy Barends', 'Joe Taslim', 'Joshua Suherman', 'Judika Sihotang', 'Julia Perez', 'Krisdayanti', 'Laudya Cynthia Bella', 'Lukman Sardi', 'Marcell Siahaan', 'Mariana Renata', 'Marsha Timothy', 'Maudy Koesnaedi', 'Mike Lewis', 'Miller Khan', 'Nadine Chandrawinata', 'Nana Mirdad'],
+                '11A': ['Olivia Jensen', 'Omar Daniel', 'Once Mekel', 'Pasha Ungu', 'Pevita Pearce', 'Prilly Latuconsina', 'Putri Titian', 'Raditya Dika', 'Raisa Andriana', 'Raline Shah', 'Randy Pangalila', 'Revalina S. Temat', 'Reza Rahadian', 'Rianti Cartwright', 'Richard Kyle', 'Rico Tampatty', 'Rina Nose', 'Ringgo Agus Rahman', 'Rionaldo Stockhorst', 'Risty Tagor', 'Rizky Billar', 'Robby Purba'],
+                '11B': ['Sandra Dewi', 'Shandy Aulia', 'Shareefa Daanish', 'Sharena Delon', 'Sheila Marcia', 'Sherina Munaf', 'Shireen Sungkar', 'Sissy PriscilLia', 'Slamet Rahardjo', 'Sophia Latjuba', 'Stefan William', 'Surya Saputra', 'Sutan Sjahrir', 'Tantri Kotak', 'Tara Basro', 'Tatjana Saphira', 'Tegar Septian', 'Teuku Rassya', 'Teuku Wisnu', 'Thomas Djorghi', 'Tika Panggabean', 'Tina Toon'],
+                '11C': ['Titi Kamal', 'Tora Sudiro', 'Tri Retno Mutiara', 'Tulus', 'Ussy Sulistiawaty', 'Valeria Stahl Kaliey', 'Velove Vexia', 'Vidi Aldiano', 'Vino G. Bastian', 'Widyawati', 'Wulan Guritno', 'Yasmine Wildblood', 'Yoriko Angeline', 'Yoshi Sudarso', 'Yuanita Christiani', 'Yuki Kato', 'Zaskia Adya Mecca', 'Zaskia Gotik', 'Zee Zee Shahab', 'Abimana Aryasatya', 'Adipati Dolken', 'Adly Fairuz'],
+                '12A': ['Afgan Syahreza', 'Agnes Monica', 'Ahmad Albar', 'Ahmad Dhani', 'Aimee Saras', 'Aishwarya Rai', 'Ajeng Kartini', 'Al Ghazali', 'Aliando Syarief', 'Alika Islamadina', 'Aline Adita', 'Alyssa Soebandono', 'Aming Sugandhi', 'Andhika Pratama', 'Andien Aisyah', 'Andrew White', 'Andy /rif', 'Angel Karamoy', 'Angela Gilsha', 'Anggun C. Sasmi', 'Anjasmara', 'Annisa Pohan'],
+                '12B': ['Anwar Fuady', 'Ari Lasso', 'Ariel Tatum', 'Arifin Putra', 'Ariyo Wahab', 'Artika Sari Devi', 'Asmirandah', 'Atiqah Hasiholan', 'Aura Kasih', 'Ayu Azhari', 'Ayu Ting Ting', 'Baim Wong', 'Bams Samsons', 'Barry Prima', 'Bebi Romeo', 'Ben Joshua', 'Ben Kasyafani', 'Bertrand Antolin', 'Bunga Citra Lestari', 'Caitlin Halderman', 'Candra Darusman', 'Carissa Putri'],
+                '12C': ['Chacha Frederica', 'Charly van Houten', 'Chelsea Olivia', 'Christine Hakim', 'Ciccio Manassero', 'Cindy Fatika Sari', 'Cinta Laura', 'Cornelia Agatha', 'Cut Keke', 'Cut Mini', 'Cut Tari', 'Darius Sinathrya', 'David Naif', 'Deddy Corbuzier', 'Deddy Mizwar', 'Denny Cagur', 'Desy Ratnasari', 'Dewi Sandra', 'Dhea Ananda', 'Dhini Aminarti', 'Dian Sastrowardoyo', 'Didik Nini Thowok']
+            }
+        };
+
+        // --- Variabel Global ---
+        let currentUser = null; 
+        let tempAbsenData = {}; 
+        let tempRemoveTarget = null; // Menyimpan elemen <tr> yang akan dihapus
+        const JAM_MASUK = 7; // Jam 7:00 Pagi
+        
+        // --- Helper Functions ---
+        const el = id => document.getElementById(id);
+        const getTodayDateString = () => new Date().toISOString().split('T')[0];
+        const oneDayMs = 24 * 60 * 60 * 1000;
+        function getUserId(user) { if (!user) return null; if (user.role === 'guru') return user.id; if (user.role === 'admin') return user.id; if (user.role === 'murid') return `murid_${user.kelas}_${user.nama.replace(/\s+/g, '-')}`; return null; }
+        function getStatusColor(status) { const s = (status || '').toLowerCase(); if (s.includes('hadir') || s.includes('terlambat')) return 'bg-green-500/80'; if (s === 'sakit') return 'bg-yellow-500/80'; if (s === 'izin') return 'bg-blue-500/80'; return 'bg-red-500/80'; }
+        function createTable(headers, body) { return `<table class="w-full text-left whitespace-nowrap"><thead><tr class="border-b border-white/30 text-sm uppercase">${headers.map(h => `<th class="p-3 font-semibold">${h}</th>`).join('')}</tr></thead><tbody class="divide-y divide-white/20">${body}</tbody></table>`; }
+        function escapeCSV(str) { return `"${(str || '').replace(/"/g, '""')}"`; }
+        function findUserById(userId) { if (!userId) return null; if (userId.startsWith('murid_')) { const parts = userId.split('_'); if (parts.length < 3) return null; const kelas = parts[1]; const nama = parts.slice(2).join('_').replace(/-/g, ' '); return { nama, kelas }; } else if (userId.startsWith('guru')) { const guru = DATA.guru.find(g => g.id === userId); return { nama: guru ? guru.nama : 'Guru' }; } else if (userId === 'admin01') { return { nama: DATA.admin[0].nama }; } return null; }
+        function calculateStreak(history) { if (!history || history.length === 0) return 0; const hadirDates = new Set(history.filter(rec => rec.status.toLowerCase().includes('hadir') || rec.status.toLowerCase().includes('terlambat')).map(rec => rec.tanggal)); if (hadirDates.size === 0) return 0; const sortedDates = Array.from(hadirDates).map(d => new Date(d)).sort((a, b) => b - a); let streak = 0; let today = new Date(getTodayDateString()); if (sortedDates[0].getTime() !== today.getTime()) { return 0; } streak = 1; let lastDate = sortedDates[0]; for (let i = 1; i < sortedDates.length; i++) { const diff = lastDate.getTime() - sortedDates[i].getTime(); if (diff === oneDayMs) { streak++; lastDate = sortedDates[i]; } else if (diff > oneDayMs) { break; } } return streak; }
+
+        // --- Logic Tampilan (UI) ---
+        function showLoading(containerId, message = 'Memuat data...') {
+            const container = el(containerId);
+            if(container) container.innerHTML = `<div class="flex justify-center items-center p-10"><div class="loader"></div><p class="ml-4">${message}</p></div>`;
+        }
+        function switchTab(clickedTab) {
+            const tabContainer = clickedTab.closest('.flex');
+            tabContainer.querySelectorAll('button').forEach(b => b.classList.remove('tab-active'));
+            clickedTab.classList.add('tab-active');
+        }
+        function updateUsernameSelector() { const role = el('role').value; const usernameContainer = el('username-container'); const usernameSelect = el('username'); const passwordLabel = el('password-label'); usernameSelect.innerHTML = ''; if (role === 'admin') { usernameContainer.style.display = 'none'; passwordLabel.textContent = "2. Masukkan Password Admin"; return; } usernameContainer.style.display = 'block'; passwordLabel.textContent = "3. Masukkan Password"; if (role === 'murid') { Object.keys(DATA.murid).sort().forEach(kelas => { DATA.murid[kelas].forEach(nama => { const option = document.createElement('option'); option.value = nama; option.textContent = `${nama} - ${kelas}`; option.className = 'text-black'; usernameSelect.appendChild(option); }); }); } else if (role === 'guru') { DATA.guru.forEach(guru => { const option = document.createElement('option'); option.value = guru.nama; option.textContent = guru.waliKelas ? `${guru.nama} - Wali Kelas ${guru.waliKelas}` : `${guru.nama} - Guru Mata Pelajaran`; option.className = 'text-black'; usernameSelect.appendChild(option); }); } }
+        
+        /**
+         * [DIUBAH] Pengumuman akan hilang setelah 7 hari
+         */
+        async function loadLatestAnnouncement() {
+            try {
+                // Hitung tanggal 7 hari yang lalu
+                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+                
+                const { data, error } = await supabaseClient
+                    .from('pengumuman')
+                    .select('isi')
+                    .gte('created_at', sevenDaysAgo) // [BARU] Hanya ambil yg 7 hari terakhir
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .single(); 
+                
+                const banner = el('announcement-banner');
+                if (data && data.isi) {
+                    banner.innerHTML = `<strong>Pengumuman:</strong> ${data.isi}`;
+                    banner.style.display = 'block';
+                } else {
+                    banner.style.display = 'none';
+                }
+            } catch (err) {
+                console.warn("Gagal memuat pengumuman (mungkin tabel belum ada):", err.message);
+                if(el('announcement-banner')) el('announcement-banner').style.display = 'none';
+            }
+        }
+
+        /**
+         * [PERBAIKAN] Memisahkan panel absen Guru dan Laporan Wali Kelas
+         */
+        async function showDashboard() {
+            el('login-page').classList.add('hidden');
+            el('dashboard-page').classList.remove('hidden');
+            
+            let welcomeName = currentUser.nama;
+            if (currentUser.role === 'murid') welcomeName = `${currentUser.nama} (Kelas ${currentUser.kelas})`;
+            else if (currentUser.waliKelas) welcomeName = `${currentUser.nama} (Wali Kelas ${currentUser.waliKelas})`; // [BARU] Tambah label Wali Kelas
+            el('welcome-message').textContent = `Selamat Datang, ${welcomeName}`;
+            
+            const dashboardContent = el('dashboard-content');
+            showLoading('dashboard-content');
+
+            // Muat pengumuman terbaru
+            await loadLatestAnnouncement();
+
+            // Blok try...catch utama untuk panel absensi (Murid / Guru)
+            try {
+                if (currentUser.role === 'admin') {
+                    // Admin tidak punya panel absen, langsung render laporan
+                    await renderAdminReport();
+                
+                } else if (currentUser.role === 'guru') {
+                    // [PERBAIKAN] Logika untuk Guru (Wali Kelas dan Mapel)
+                    // Jika dia Wali Kelas, panggil fungsi Tab
+                    if (currentUser.waliKelas) {
+                        await renderWaliKelasTabs();
+                    } else {
+                        // Jika dia Guru Mapel Biasa, tampilkan panel absennya saja
+                        const userId = getUserId(currentUser);
+                        const today = getTodayDateString();
+                        const { data: todayRecord, error: todayError } = await supabaseClient
+                            .from('absensi').select('*').eq('user_id', userId).eq('tanggal', today).single();
+
+                        if (todayError && todayError.code !== 'PGRST116') throw todayError;
+                        
+                        // Render panel absen guru ke 'dashboard-content'
+                        await renderStatusView(todayRecord, null, 'dashboard-content');
+                    }
+                
+                } else { 
+                    // --- INI PASTI MURID ---
+                    const userId = getUserId(currentUser);
+                    const today = getTodayDateString();
+                    
+                    const { data: todayRecord, error: todayError } = await supabaseClient
+                        .from('absensi')
+                        .select('*')
+                        .eq('user_id', userId)
+                        .eq('tanggal', today)
+                        .single();
+
+                    if (todayError && todayError.code !== 'PGRST116') throw todayError;
+
+                    // Render panel absen murid ke 'dashboard-content'
+                    await renderStatusView(todayRecord, currentUser.kelas, 'dashboard-content');
+                }
+            } catch (err) {
+                // Error ini HANYA untuk panel absensi utama (Murid/Guru Mapel)
+                dashboardContent.innerHTML = `<p class="text-red-400 p-4 text-center font-bold">Gagal memuat dasbor utama: ${err.message}.<br>(PENTING: Pastikan RLS di tabel 'absensi' sudah OFF.)</p>`;
+            }
+        }
+
+
+        /**
+         * [DIUBAH] Menampilkan panel status (Absen/Sakit/Izin/Pulang)
+         * [PERBAIKAN] Menambahkan kembali rekap & streak (api) untuk murid
+         */
+        async function renderStatusView(todayRecord, kelas, containerId) {
+            const container = el(containerId);
+            if (!container) return; // [BARU] Pengaman jika container tidak ditemukan
+            
+            const userId = getUserId(currentUser);
+            const today = getTodayDateString();
+
+            let statsHtml = '';
+            let streakHtml = '';
+
+            // [PERBAIKAN] Hanya muat riwayat jika ini adalah MURID
+            if (currentUser.role === 'murid') {
+                try {
+                    // 1. Ambil SEMUA riwayat absensi murid ini
+                    const { data: allHistory, error: historyError } = await supabaseClient
+                        .from('absensi')
+                        .select('tanggal, status') // Hanya perlu tanggal dan status
+                        .eq('user_id', userId)
+                        .order('tanggal', { ascending: false });
+                    
+                    if (historyError) throw historyError;
+
+                    // 2. Hitung Streak (Fitur Api)
+                    const streak = calculateStreak(allHistory);
+                    if (streak > 0) {
+                        streakHtml = `<div class="text-center mb-6"><div class="streak-display">🔥 ${streak} Hari Absen Beruntun!</div></div>`;
+                    }
+
+                    // 3. Hitung Total (Fitur Rekap)
+                    const stats = { hadir: 0, terlambat: 0, sakit: 0, izin: 0 };
+                    if (allHistory) { // [BARU] Pastikan allHistory tidak null
+                        allHistory.forEach(rec => {
+                            const s = (rec.status || '').toLowerCase(); // [BARU] Pengaman jika status null
+                            if (s === 'hadir tepat waktu') stats.hadir++;
+                            else if (s === 'terlambat') stats.terlambat++;
+                            else if (s === 'sakit') stats.sakit++;
+                            else if (s === 'izin') stats.izin++;
+                        });
+                    }
+
+                    statsHtml = `
+                        <div class="mt-10 pt-6 border-t border-white/20">
+                            <h4 class="text-xl font-semibold mb-4 text-center">Rekap Absensi Anda</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                <div class="glass-card p-4 rounded-lg">
+                                    <div class="text-3xl font-bold text-green-300">${stats.hadir}</div>
+                                    <div class="text-sm text-gray-300">Hadir Tepat Waktu</div>
+                                </div>
+                                <div class="glass-card p-4 rounded-lg">
+                                    <div class="text-3xl font-bold text-yellow-300">${stats.terlambat}</div>
+                                    <div class="text-sm text-gray-300">Terlambat</div>
+                                </div>
+                                <div class="glass-card p-4 rounded-lg">
+                                    <div class="text-3xl font-bold text-blue-300">${stats.izin}</div>
+                                    <div class="text-sm text-gray-300">Izin</div>
+                                </div>
+                                <div class="glass-card p-4 rounded-lg">
+                                    <div class="text-3xl font-bold text-red-300">${stats.sakit}</div>
+                                    <div class="text-sm text-gray-300">Sakit</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                } catch (err) {
+                    console.warn("Gagal memuat riwayat murid:", err.message);
+                    statsHtml = `<p class="text-center text-red-400 text-sm">Gagal memuat rekap absensi: ${err.message}</p>`;
+                }
+            }
+            
+            // --- Ini adalah LOGIKA YANG SUDAH ADA (Tidak diubah) ---
+            let statusHtml = '';
+            
+            if (todayRecord) {
+                // --- SUDAH ABSEN ---
+                const status = todayRecord.status;
+                const keterangan = todayRecord.keterangan || '';
+                const waktuAbsen = new Date(todayRecord.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+                statusHtml = `
+                    <div class="text-center max-w-lg mx-auto">
+                        <h3 class="text-2xl font-bold mb-4">Anda Sudah Absen Hari Ini</h3>
+                        <div class="p-6 rounded-lg glass-card inline-block">
+                            <div class="text-3xl font-bold ${status.includes('Hadir') || status.includes('Terlambat') ? 'text-green-300' : (status === 'Sakit' ? 'text-yellow-300' : 'text-blue-300')}">
+                                ${status}
+                            </div>
+                            <div class="text-gray-200 mt-2">Pukul ${waktuAbsen}</div>
+                            ${keterangan ? `<p class="text-gray-300 mt-2 text-sm">Ket: ${keterangan}</p>` : ''}
+                        </div>`;
+
+                // [FITUR BARU] Tombol Absen Pulang
+                if ((status.includes('Hadir') || status.includes('Terlambat')) && !todayRecord.waktu_pulang) {
+                    statusHtml += `
+                        <div class="mt-8">
+                            <button id="btn-absen-pulang" class="bg-indigo-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition-all duration-300 transform hover:scale-105">
+                                <span id="pulang-submit-text">Absen Pulang Sekolah</span>
+                                <div id="pulang-submit-loader" class="loader hidden mx-auto"></div>
+                            </button>
+                            <p id="pulang-error" class="text-red-400 text-sm mt-4 h-5"></p>
+                        </div>
+                    `;
+                } else if (todayRecord.waktu_pulang) {
+                    const waktuPulang = new Date(todayRecord.waktu_pulang).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                    statusHtml += `
+                        <div class="mt-8">
+                            <h4 class="text-xl font-semibold text-green-300">Anda sudah absen pulang</h4>
+                            <p class="text-gray-300">Pukul ${waktuPulang}</p>
+                        </div>
+                    `;
+                }
+                
+                statusHtml += '</div>';
+
+            } else {
+                // --- BELUM ABSEN ---
+                statusHtml = `
+                    <div class="text-center max-w-lg mx-auto">
+                        <h3 class="text-2xl font-bold mb-6">Silakan Lakukan Absensi</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <button id="btn-hadir" class="bg-green-600/80 hover:bg-green-700 text-white font-bold py-6 px-4 rounded-lg transition-all transform hover:scale-105">
+                                <span class="text-2xl">Hadir</span>
+                            </button>
+                            <button id="btn-sakit" class="bg-yellow-500/80 hover:bg-yellow-600 text-white font-bold py-6 px-4 rounded-lg transition-all transform hover:scale-105">
+                                <span class="text-2xl">Sakit</span>
+                            </button>
+                            <button id="btn-izin" class="bg-blue-500/80 hover:bg-blue-600 text-white font-bold py-6 px-4 rounded-lg transition-all transform hover:scale-105">
+                                <span class="text-2xl">Izin</span>
+                            </button>
+                        </div>
+                        <p id="absen-error" class="text-red-400 text-sm mt-6 h-5"></p>
+                    </div>
+                `;
+            }
+
+            // [DIUBAH] Gabungkan semuanya (streak + status harian + rekap total)
+            container.innerHTML = streakHtml + statusHtml + statsHtml;
+
+            // Tambahkan event listener untuk tombol yang baru dibuat
+            if (todayRecord && (todayRecord.status.includes('Hadir') || todayRecord.status.includes('Terlambat')) && !todayRecord.waktu_pulang) {
+                el('btn-absen-pulang').onclick = () => handleUserAbsenPulang(todayRecord.id);
+            } else if (!todayRecord) {
+                el('btn-hadir').onclick = handleUserAbsen;
+                el('btn-sakit').onclick = handleUserAbsen;
+                el('btn-izin').onclick = handleUserAbsen;
+            }
+        }
+
+        // --- Logic Absensi ---
+        function handleUserAbsen(e) {
+            const status = e.currentTarget.id.replace('btn-', ''); // 'hadir', 'sakit', 'izin'
+            const userId = getUserId(currentUser);
+            const today = getTodayDateString();
+
+            tempAbsenData = {
+                user_id: userId,
+                tanggal: today,
+                status: '',
+                keterangan: '',
+                nama: currentUser.nama, // Untuk data historis
+                kelas: currentUser.kelas || null // Untuk data historis
+            };
+
+            if (status === 'hadir') {
+                const now = new Date();
+                const jam = now.getHours();
+                tempAbsenData.status = (jam < JAM_MASUK) ? 'Hadir Tepat Waktu' : 'Terlambat';
+                submitAbsen(); // Langsung kirim
+            } else {
+                tempAbsenData.status = (status === 'sakit') ? 'Sakit' : 'Izin';
+                openModal(); // Minta keterangan
+            }
+        }
+        async function submitAbsen() {
+            const modalSubmitBtn = el('modal-submit-keterangan');
+            const submitText = el('keterangan-submit-text');
+            const loader = el('keterangan-submit-loader');
+            
+            // [PERBAIKAN] Pindahkan pencarian generalError ke sini
+            const generalErrorEl = el('absen-error');
+            
+            // [PERBAIKAN] Tentukan targetId berdasarkan peran (wali kelas atau bukan)
+            const targetId = (currentUser.role === 'guru' && currentUser.waliKelas) ? 'walas-tab-content' : 'dashboard-content';
+            
+            if (generalErrorEl) generalErrorEl.textContent = '';
+            
+            // Tampilkan loader jika dari modal
+            if (!el('keterangan-modal').classList.contains('hidden')) {
+                if (submitText) submitText.classList.add('hidden');
+                if (loader) loader.classList.remove('hidden');
+                if (modalSubmitBtn) modalSubmitBtn.disabled = true;
+            } else {
+                // Jika absen 'hadir', tampilkan loading di dashboard
+                // [DIUBAH] Gunakan targetId yang benar
+                showLoading(targetId, 'Mengirim absensi...');
+            }
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('absensi')
+                    .insert(tempAbsenData)
+                    .select()
+                    .single(); // Ambil data yang baru di-insert
+
+                if (error) throw error;
+
+                closeModal();
+                // Refresh panel status
+                // [DIUBAH] Gunakan targetId yang benar
+                await renderStatusView(data, currentUser.kelas, targetId);
+
+            } catch (err) {
+                console.error("Gagal submit absen:", err);
+                
+                // [PERBAIKAN] Logika penanganan error
+                // Cek apakah kita di dalam modal atau tidak
+                if (!el('keterangan-modal').classList.contains('hidden')) {
+                    // Jika di dalam modal (Sakit/Izin), tampilkan error di 'absen-error' (di belakang modal)
+                    if (generalErrorEl) generalErrorEl.textContent = `Gagal: ${err.message}`;
+                } else {
+                    // Jika BUKAN di modal (Hadir), 'showLoading' menghancurkan UI.
+                    // Kita harus menulis ulang errornya ke kontainer.
+                    const container = el(targetId);
+                    if (container) {
+                        container.innerHTML = `<p class="text-red-400 p-4 text-center font-bold">Gagal submit absen: ${err.message}</p>
+                        <p class="text-gray-300 text-sm text-center mb-4">Silakan coba refresh halaman (F5).</p>
+                        <p class="text-gray-400 text-xs text-center">(PENTING: Penyebab paling umum: Row Level Security (RLS) di tabel 'absensi' Anda masih ON. Pastikan RLS sudah di-Disable.)</p>`;
+                    }
+                }
+            } finally {
+                // Sembunyikan loader modal
+                if (submitText) submitText.classList.remove('hidden');
+                if (loader) loader.classList.add('hidden');
+                if (modalSubmitBtn) modalSubmitBtn.disabled = false;
+            }
+        }
+        function openModal() {
+            el('modal-keterangan').value = '';
+            el('keterangan-modal').classList.remove('hidden');
+        }
+        function closeModal() {
+            el('keterangan-modal').classList.add('hidden');
+        }
+
+        /**
+         * [FITUR BARU] Menangani absen pulang
+         */
+        async function handleUserAbsenPulang(rowId) {
+            const btnText = el('pulang-submit-text');
+            const loader = el('pulang-submit-loader');
+            const errorEl = el('pulang-error');
+
+            if(btnText) btnText.classList.add('hidden');
+            if(loader) loader.classList.remove('hidden');
+            if(errorEl) errorEl.textContent = '';
+
+            try {
+                // Update baris yang sudah ada dengan waktu pulang
+                const { data, error } = await supabaseClient
+                    .from('absensi')
+                    .update({ 
+                        waktu_pulang: new Date().toISOString() // Set ke waktu sekarang
+                    })
+                    .eq('id', rowId) // Update baris yang spesifik
+                    .select()
+                    .single(); // Ambil data yang baru di-update
+
+                if (error) throw error;
+
+                // Refresh panel untuk menampilkan status "Sudah Pulang"
+                // [PERBAIKAN] Mengganti targetId untuk guru
+                const targetId = (currentUser.role === 'guru' && currentUser.waliKelas) ? 'walas-tab-content' : 'dashboard-content';
+                await renderStatusView(data, currentUser.kelas, targetId);
+
+            } catch (err) {
+                console.error("Gagal absen pulang:", err);
+                if(btnText) btnText.classList.remove('hidden');
+                if(loader) loader.classList.add('hidden');
+                if(errorEl) errorEl.textContent = `Gagal: ${err.message}. (Cek RLS?)`;
+            }
+        }
+
+        // --- Logic Laporan (Admin & Wali Kelas) ---
+
+        /**
+         * [PERBAIKAN] Menambahkan fungsi renderWaliKelasTabs (yang hilang)
+         */
+        async function renderWaliKelasTabs() {
+            const dashboardContent = el('dashboard-content');
+            const kelas = currentUser.waliKelas;
+            dashboardContent.innerHTML = `
+                <div class="flex border-b border-white/20 mb-6">
+                    <button id="tab-absen-saya" class="py-3 px-6 font-semibold border-b-2 tab-active">Absensi Saya</button>
+                    <button id="tab-laporan-kelas" class="py-3 px-6 font-semibold border-b-2 border-transparent text-gray-300 hover:text-white">Laporan Kelas ${kelas}</button>
+                </div>
+                <div id="walas-tab-content"></div>
+            `;
+
+            el('tab-absen-saya').onclick = async (e) => {
+                try { // [BARU] Tambah try...catch
+                    switchTab(e.target);
+                    // Muat data absen pribadi
+                    const userId = getUserId(currentUser);
+                    const today = getTodayDateString();
+                    const { data: todayRecord, error } = await supabaseClient
+                        .from('absensi').select('*').eq('user_id', userId).eq('tanggal', today).single();
+                    
+                    if (error && error.code !== 'PGRST116') throw error;
+                    
+                    await renderStatusView(todayRecord, null, 'walas-tab-content');
+                } catch (err) {
+                    el('walas-tab-content').innerHTML = `<p class="text-red-400 p-4 text-center">Gagal memuat panel absensi: ${err.message}. (Cek RLS?)</p>`;
+                }
+            };
+            el('tab-laporan-kelas').onclick = async (e) => {
+                try { // [BARU] Tambah try...catch
+                    switchTab(e.target);
+                    // Muat laporan kelas
+                    await renderWaliKelasReport('walas-tab-content');
+                } catch (err) {
+                    el('walas-tab-content').innerHTML = `<p class="text-red-400 p-4 text-center">Gagal memuat laporan kelas: ${err.message}. (Cek RLS?)</p>`;
+                }
+            };
+
+            // Tampilkan tab "Absensi Saya" by default
+            el('tab-absen-saya').click(); // Panggil click untuk memuat data
+        }
+
+        /**
+         * [DIUBAH] Render Laporan untuk Wali Kelas
+         */
+        async function renderWaliKelasReport(containerId) {
+            const container = el(containerId);
+            const kelas = currentUser.waliKelas;
+            showLoading(containerId, `Memuat laporan untuk kelas ${kelas}...`);
+
+            try {
+                const { stats, todayData, palingPagi } = await processReportData(kelas);
+                let tableBody = '';
+
+                // Daftar murid di kelas ini
+                const muridDiKelas = DATA.murid[kelas] || [];
+                muridDiKelas.sort().forEach(nama => {
+                    const userId = `murid_${kelas}_${nama.replace(/\s+/g, '-')}`;
+                    const todayRecord = todayData[userId];
+                    const status = todayRecord ? todayRecord.status : 'Alfa';
+                    const keterangan = todayRecord ? todayRecord.keterangan : '';
+                    const waktuPulang = todayRecord && todayRecord.waktu_pulang ? 
+                        new Date(todayRecord.waktu_pulang).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-';
+
+                    tableBody += `
+                        <tr class="hover:bg-white/10 transition">
+                            <td class="p-3 font-medium">${nama}</td>
+                            <td class="p-3"><span class="px-2 py-0.5 rounded ${getStatusColor(status)} text-xs">${status}</span></td>
+                            <td class="p-3 text-gray-300">${keterangan}</td>
+                            <td class="p-3 text-gray-300">${waktuPulang}</td>
+                        </tr>`;
+                });
+
+                const tableHeaders = ['Nama Murid', 'Status Hari Ini', 'Keterangan', 'Absen Pulang'];
+                const exportButton = `
+                    <div class="text-right mb-4">
+                        <button id="export-excel-btn-walas" class="bg-green-600/80 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition-all ml-auto">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            Ekspor Excel Kelas ${kelas}
+                        </button>
+                    </div>`;
+                const gamificationContainer = `<div id="gamification-container" class="gamification-container"></div>`;
+
+                container.innerHTML = gamificationContainer + exportButton + createTable(tableHeaders, tableBody);
+                el('export-excel-btn-walas').onclick = () => exportReportToExcel('walas', kelas);
+                
+                renderGamification(stats, palingPagi, kelas);
+
+            } catch (err) {
+                container.innerHTML = `<p class="text-red-400 p-4 text-center">Gagal memuat laporan: ${err.message}. (PENTING: Pastikan RLS di tabel 'absensi' sudah OFF.)</p>`;
+            }
+        }
+        
+        /**
+         * [BARU] Render Laporan untuk Admin
+         */
+        async function renderAdminReport() {
+            const container = el('dashboard-content');
+            container.innerHTML = `
+                <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+                    <div class="flex border-b border-white/20">
+                        <button id="tab-murid" class="py-3 px-6 font-semibold border-b-2 tab-active">Laporan Murid</button>
+                        <button id="tab-guru" class="py-3 px-6 font-semibold border-b-2 border-transparent text-gray-300 hover:text-white">Laporan Guru</button>
+                        <button id="tab-pengumuman" class="py-3 px-6 font-semibold border-b-2 border-transparent text-gray-300 hover:text-white">Pengumuman</button>
+                    </div>
+                    <button id="export-excel-btn" class="bg-green-600/80 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                        Ekspor Excel
+                    </button>
+                </div>
+                
+                <div id="gamification-container" class="gamification-container"></div>
+                <div id="tab-content" class="overflow-y-auto max-h-[75vh]"></div>`;
+            
+            const exportBtn = el('export-excel-btn');
+            
+            el('tab-murid').onclick = async (e) => { 
+                switchTab(e.target);
+                exportBtn.style.display = 'flex';
+                el('gamification-container').style.display = 'grid';
+                await renderMuridReport(); 
+            };
+            el('tab-guru').onclick = async (e) => {
+                switchTab(e.target);
+                exportBtn.style.display = 'none'; // Sembunyikan ekspor untuk guru
+                el('gamification-container').style.display = 'none';
+                await renderGuruReport();
+            };
+            el('tab-pengumuman').onclick = async (e) => {
+                switchTab(e.target);
+                exportBtn.style.display = 'none';
+                el('gamification-container').style.display = 'none';
+                await renderPengumumanTab();
+            };
+            
+            el('export-excel-btn').onclick = () => exportReportToExcel('admin');
+            
+            exportBtn.style.display = 'flex';
+            el('gamification-container').style.display = 'grid';
+            await renderMuridReport(); // Tampilkan laporan murid by default
+        }
+
+        /**
+         * [DIUBAH] Mengambil dan memproses semua data absensi
+         */
+        async function processReportData(filterKelas = null) {
+            // 1. Ambil semua data absensi (bisa difilter per bulan nanti, sekarang ambil semua)
+            // Untuk performa, idealnya difilter berdasarkan rentang tanggal
+            const { data: allData, error: allError } = await supabaseClient
+                .from('absensi')
+                .select('*'); 
+                // .gte('tanggal', '2024-01-01') // Contoh filter
+            
+            if (allError) throw allError;
+
+            const stats = {};
+            const todayData = {};
+            let palingPagi = null;
+            const today = getTodayDateString();
+
+            allData.forEach(rec => {
+                const userId = rec.user_id;
+                if (!userId) return; // [BARU] Pengaman jika user_id null
+
+                // Filter data jika ini laporan wali kelas
+                if (filterKelas && !userId.startsWith(`murid_${filterKelas}_`)) {
+                    return; // Skip data murid dari kelas lain
+                }
+
+                if (!stats[userId]) {
+                    stats[userId] = { hadir: 0, terlambat: 0, sakit: 0, izin: 0, streak: 0 };
+                }
+
+                // Hitung statistik
+                const status = (rec.status || '').toLowerCase(); // [BARU] Pengaman jika status null
+                if (status === 'hadir tepat waktu') stats[userId].hadir++;
+                else if (status === 'terlambat') stats[userId].terlambat++;
+                else if (status === 'sakit') stats[userId].sakit++;
+                else if (status === 'izin') stats[userId].izin++;
+                
+                // Cek data hari ini
+                if (rec.tanggal === today) {
+                    todayData[userId] = rec;
+
+                    // Cek paling pagi (hanya untuk status hadir/terlambat)
+                    if (status.includes('hadir') || status.includes('terlambat')) {
+                        const recTime = new Date(rec.created_at);
+                        if (!palingPagi || recTime < palingPagi.waktu) {
+                            palingPagi = { 
+                                nama: rec.nama, // Asumsi 'nama' disimpan saat absen
+                                kelas: rec.kelas, // Asumsi 'kelas' disimpan saat absen
+                                waktu: recTime 
+                            };
+                        }
+                    }
+                }
+            });
+            
+            // Hitung streak (idealnya per pengguna)
+            // Ini bisa jadi berat jika dilakukan untuk semua user sekaligus
+            // Untuk sekarang, kita skip perhitungan streak di laporan admin
+
+            return { stats, todayData, palingPagi };
+        }
+
+        /**
+         * [DIUBAH] Render Laporan Tab Murid (untuk Admin)
+         */
+        async function renderMuridReport() {
+            const container = el('tab-content');
+            showLoading('tab-content', 'Memuat laporan murid...');
+
+            try {
+                const { stats, todayData, palingPagi } = await processReportData();
+                let tableBody = '';
+                
+                // Urutkan berdasarkan kelas, lalu nama
+                Object.keys(DATA.murid).sort().forEach(kelas => {
+                    DATA.murid[kelas].forEach(nama => {
+                        const userId = `murid_${kelas}_${nama.replace(/\s+/g, '-')}`;
+                        const userStats = stats[userId] || { hadir: 0, terlambat: 0, sakit: 0, izin: 0 };
+                        const todayRecord = todayData[userId];
+                        
+                        const status = todayRecord ? todayRecord.status : 'Alfa';
+                        const keterangan = (todayRecord ? todayRecord.keterangan : '') || ''; // [BARU] Pengaman
+                        const keteranganAman = keterangan.replace(/"/g, '&quot;'); // Untuk data attribute
+                        const waktuPulang = todayRecord && todayRecord.waktu_pulang ? 
+                            new Date(todayRecord.waktu_pulang).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-';
+
+                        tableBody += `
+                        <tr class="hover:bg-white/10 transition" id="row-${userId}">
+                            <td class="p-3 font-medium">${nama}</td>
+                            <td class="p-3 text-gray-300">${kelas}</td>
+                            <td class="p-3"><span class="px-2 py-0.5 rounded ${getStatusColor(status)} text-xs">${status}</span></td>
+                            <td class="p-3 text-gray-300">${keterangan}</td>
+                            <td class="p-3 text-gray-300">${waktuPulang}</td>
+                            <td class="p-3 text-center text-green-300">${userStats.hadir}</td>
+                            <td class="p-3 text-center text-yellow-300">${userStats.terlambat}</td>
+                            <td class="p-3 text-center text-blue-300">${userStats.izin}</td>
+                            <td class="p-3 text-center text-red-300">${userStats.sakit}</td>
+                            <td class="p-3 text-right whitespace-nowrap">
+                                <span class="btn-edit" data-userid="${userId}" data-nama="${nama}" data-status="${status}" data-keterangan="${keteranganAman}">Edit</span>
+                                <span class="btn-history" data-userid="${userId}" data-nama="${nama}">Riwayat</span>
+                                <span class="btn-hapus" data-userid="${userId}" data-nama="${nama}">Hapus</span>
+                            </td>
+                        </tr>`;
+                    });
+                });
+
+                const tableHeaders = ['Nama', 'Kelas', 'Status Hari Ini', 'Ket.', 'Pulang', 'Hadir', 'Telat', 'Izin', 'Sakit', 'Aksi'];
+                container.innerHTML = createTable(tableHeaders, tableBody);
+
+                // Render gamification
+                renderGamification(stats, palingPagi, null); // null = semua kelas
+
+            } catch (err) {
+                container.innerHTML = `<p class="text-red-400 p-4 text-center">Gagal memuat laporan murid: ${err.message}. (PENTING: Pastikan RLS di tabel 'absensi' sudah OFF.)</p>`;
+            }
+        }
+        
+        /**
+         * [DIUBAH] Render Laporan Tab Guru (untuk Admin)
+         */
+        async function renderGuruReport() {
+            const container = el('tab-content');
+            showLoading('tab-content', 'Memuat laporan guru...');
+            
+            try {
+                const { todayData } = await processReportData();
+                let tableBody = '';
+
+                DATA.guru.sort((a,b) => a.nama.localeCompare(b.nama)).forEach(guru => {
+                    const userId = guru.id;
+                    const todayRecord = todayData[userId];
+                    const status = todayRecord ? todayRecord.status : 'Alfa';
+                    const keterangan = (todayRecord ? todayRecord.keterangan : '') || ''; // [BARU] Pengaman
+                    const waktuAbsen = todayRecord ? new Date(todayRecord.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-';
+                    const waktuPulang = todayRecord && todayRecord.waktu_pulang ? 
+                        new Date(todayRecord.waktu_pulang).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-';
+
+                    tableBody += `
+                        <tr class="hover:bg-white/10 transition">
+                            <td class="p-3 font-medium">${guru.nama}</td>
+                            <td class="p-3 text-gray-300">${guru.waliKelas || 'Guru Mata Pelajaran'}</td>
+                            <td class="p-3"><span class="px-2 py-0.5 rounded ${getStatusColor(status)} text-xs">${status}</span></td>
+                            <td class="p-3 text-gray-300">${waktuAbsen}</td>
+                            <td class="p-3 text-gray-300">${waktuPulang}</td>
+                            <td class="p-3 text-gray-300">${keterangan}</td>
+                        </tr>`;
+                });
+
+                const tableHeaders = ['Nama Guru', 'Peran', 'Status Hari Ini', 'Waktu Masuk', 'Waktu Pulang', 'Keterangan'];
+                container.innerHTML = createTable(tableHeaders, tableBody);
+                
+            } catch (err) {
+                container.innerHTML = `<p class="text-red-400 p-4 text-center">Gagal memuat laporan guru: ${err.message}. (PENTING: Pastikan RLS di tabel 'absensi' sudah OFF.)</p>`;
+            }
+        }
+
+        /**
+         * [BARU] Render Tab Pengumuman (untuk Admin)
+         */
+        async function renderPengumumanTab() {
+            const container = el('tab-content');
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Kolom Kirim Pengumuman -->
+                    <div class="glass-card p-6 rounded-lg">
+                        <h4 class="text-xl font-semibold mb-4">Kirim Pengumuman Baru</h4>
+                        <textarea id="pengumuman-isi" class="w-full p-2 rounded bg-gray-700/50 border border-gray-600" rows="4" placeholder="Tulis pengumuman di sini..."></textarea>
+                        <p id="pengumuman-error" class="text-red-400 text-sm mt-2 h-5"></p>
+                        <button id="btn-kirim-pengumuman" class="w-full bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition-all duration-300 mt-4">
+                            <span id="pengumuman-submit-text">Kirim</span>
+                            <div id="pengumuman-submit-loader" class="loader hidden mx-auto"></div>
+                        </button>
+                    </div>
+                    <!-- Kolom Riwayat Pengumuman -->
+                    <div class="glass-card p-6 rounded-lg">
+                        <h4 class="text-xl font-semibold mb-4">Riwayat Pengumuman Terkirim</h4>
+                        <div id="pengumuman-history" class="space-y-4 overflow-y-auto max-h-[300px]">
+                            <!-- Riwayat dimuat di sini -->
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Tambahkan event listener
+            el('btn-kirim-pengumuman').onclick = handleSendPengumuman;
+            
+            // Muat riwayat
+            await loadPengumumanHistory();
+        }
+
+        /**
+         * [BARU] Logika Gamifikasi
+         */
+        function renderGamification(stats, palingPagi, filterKelas = null) {
+            const container = el('gamification-container');
+            if (!container) return;
+
+            const leaderboard = Object.keys(stats)
+                .filter(userId => userId.startsWith('murid_'))
+                .filter(userId => {
+                    if (!filterKelas) return true;
+                    const userDetail = findUserById(userId);
+                    return userDetail && userDetail.kelas === filterKelas;
+                })
+                .map(userId => {
+                    const userDetail = findUserById(userId);
+                    const totalHadir = (stats[userId].hadir || 0) + (stats[userId].terlambat || 0);
+                    return {
+                        nama: userDetail ? userDetail.nama : '???',
+                        kelas: userDetail ? userDetail.kelas : '???',
+                        totalHadir: totalHadir
+                    };
+                })
+                .sort((a, b) => b.totalHadir - a.totalHadir)
+                .slice(0, 3); // Ambil 3 teratas
+
+            let leaderboardHtml = '<h4>🏆 Papan Peringkat (Total Hadir)</h4><ol class="list-decimal list-inside">';
+            if (leaderboard.length > 0) {
+                leaderboard.forEach((murid, index) => {
+                    leaderboardHtml += `<li><strong>${murid.nama}</strong> (${murid.kelas}) - ${murid.totalHadir} hari</li>`;
+                });
+            } else {
+                leaderboardHtml += '<p class="text-gray-400">Belum ada data.</p>';
+            }
+            leaderboardHtml += '</ol>';
+
+            let palingPagiHtml = '<h4>🏅 Absen Paling Pagi (Hari Ini)</h4>';
+            if (palingPagi) {
+                if (filterKelas && palingPagi.kelas !== filterKelas) {
+                    palingPagiHtml += '<p class="text-gray-400">Belum ada data di kelas Anda.</p>';
+                } else {
+                    palingPagiHtml += `<p><strong>${palingPagi.nama}</strong> (${palingPagi.kelas})<br><span class="text-sm text-gray-300">Pukul: ${new Date(palingPagi.waktu).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span></p>`;
+                }
+            } else {
+                palingPagiHtml += '<p class="text-gray-400">Belum ada yang absen hadir.</p>';
+            }
+
+            container.innerHTML = `<div class="stat-card">${leaderboardHtml}</div><div class="stat-card">${palingPagiHtml}</div>`;
+        }
+
+        // --- Logic Ekspor & Edit ---
+        
+        /**
+         * [DIUBAH] Ekspor ke Excel
+         */
+        async function exportReportToExcel(mode, kelas = null) {
+            const targetId = mode === 'admin' ? 'tab-content' : 'walas-tab-content';
+            showLoading(targetId, 'Mempersiapkan data ekspor Excel...');
+            
+            try {
+                const { stats, todayData } = await processReportData();
+                let dataForSheet = [];
+                
+                let headers = ["Nama", "Kelas", "Status Hari Ini", "Keterangan", "Absen Pulang", "Total Hadir Tepat Waktu", "Total Terlambat", "Total Sakit", "Total Izin"];
+                dataForSheet.push(headers);
+                
+                let usersToExport = [];
+                if (mode === 'admin') {
+                    Object.keys(DATA.murid).sort().forEach(k => {
+                        DATA.murid[k].forEach(nama => usersToExport.push({ nama, kelas: k, role: 'murid' }));
+                    });
+                } else if (mode === 'walas' && kelas) {
+                    (DATA.murid[kelas] || []).forEach(nama => usersToExport.push({ nama, kelas: kelas, role: 'murid' }));
+                }
+
+                usersToExport.forEach(user => {
+                    const userId = getUserId(user);
+                    const todayRecord = todayData[userId];
+                    const userStats = stats[userId] || { hadir: 0, terlambat: 0, sakit: 0, izin: 0 };
+                    
+                    const status = todayRecord ? todayRecord.status : 'Alfa';
+                    const keterangan = (todayRecord ? todayRecord.keterangan : '') || ''; // [BARU] Pengaman
+                    const waktuPulang = todayRecord && todayRecord.waktu_pulang ? 
+                        new Date(todayRecord.waktu_pulang).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-';
+                    
+                    let row = [
+                        user.nama,
+                        user.kelas,
+                        status,
+                        keterangan,
+                        waktuPulang,
+                        userStats.hadir,
+                        userStats.terlambat,
+                        userStats.sakit,
+                        userStats.izin
+                    ];
+                    dataForSheet.push(row);
+                });
+
+                const ws = XLSX.utils.aoa_to_sheet(dataForSheet);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Laporan Absensi'); 
+
+                const fileName = `laporan_absensi_${kelas || 'semua'}_${getTodayDateString()}.xlsx`;
+                XLSX.writeFile(wb, fileName);
+                
+                if (mode === 'admin') await renderMuridReport();
+                else if (mode === 'walas') await renderWaliKelasReport(targetId);
+                
+            } catch (err) {
+                el(targetId).innerHTML = `<p class="text-red-400 p-4 text-center">Gagal ekspor Excel: ${err.message}. (Cek RLS?)</p>`;
+            }
+        }
+
+        function showEditModal(e) { 
+            const btn = e.target.classList.contains('btn-edit') ? e.target : e.target.closest('.btn-edit');
+            const { userid, nama, status, keterangan } = btn.dataset; 
+            el('edit-user-id').value = userid; 
+            el('edit-nama').value = nama; 
+            if (status.toLowerCase() === 'alfa') { el('edit-status').value = 'Alfa'; } else { el('edit-status').value = status; } 
+            el('edit-keterangan').value = keterangan; 
+            el('edit-modal').classList.remove('hidden'); 
+        }
+        function closeEditModal() { el('edit-modal').classList.add('hidden'); el('edit-user-id').value = ''; el('edit-nama').value = ''; el('edit-keterangan').value = ''; }
+        
+        async function handleEditSubmit() {
+            const userId = el('edit-user-id').value;
+            const status = el('edit-status').value;
+            const keterangan = el('edit-keterangan').value;
+            const today = getTodayDateString();
+            const userDetail = findUserById(userId); // Ambil detail user
+
+            const errorEl = el('edit-error');
+            if(errorEl) errorEl.textContent = '';
+
+            el('edit-submit-text').classList.add('hidden');
+            el('edit-submit-loader').classList.remove('hidden');
+            
+            try {
+                if (status === 'Alfa') {
+                    // Hapus data jika status 'Alfa'
+                    const { error } = await supabaseClient
+                        .from('absensi')
+                        .delete()
+                        .eq('user_id', userId)
+                        .eq('tanggal', today);
+                    
+                    if (error) throw error;
+                } else {
+                    // Update atau insert data
+                    const { error } = await supabaseClient
+                        .from('absensi')
+                        .upsert({
+                            user_id: userId,
+                            tanggal: today,
+                            status: status,
+                            keterangan: keterangan,
+                            nama: userDetail.nama, // Pastikan nama tersimpan
+                            kelas: userDetail.kelas // Pastikan kelas tersimpan
+                        }, { onConflict: 'user_id, tanggal' }); // Pastikan ada unique constraint (user_id, tanggal) di Supabase
+                    
+                    if (error) throw error;
+                }
+                
+                closeEditModal();
+                await renderMuridReport(); // Selalu refresh laporan murid
+
+            } catch (err) {
+                if(errorEl) errorEl.textContent = `Gagal menyimpan: ${err.message}. (Cek RLS?)`;
+            } finally {
+                el('edit-submit-text').classList.remove('hidden');
+                el('edit-submit-loader').classList.add('hidden');
+            }
+        }
+
+        /**
+         * [BARU] Logika Pengumuman
+         */
+        async function handleSendPengumuman() {
+            const isi = el('pengumuman-isi').value;
+            const errorEl = el('pengumuman-error'); 
+            if (errorEl) errorEl.textContent = ''; 
+
+            if (!isi) {
+                if (errorEl) errorEl.textContent = "Pengumuman tidak boleh kosong!";
+                return;
+            }
+
+            el('pengumuman-submit-text').classList.add('hidden');
+            el('pengumuman-submit-loader').classList.remove('hidden');
+
+            try {
+                const { error } = await supabaseClient
+                    .from('pengumuman')
+                    .insert({
+                        isi: isi,
+                        author_id: getUserId(currentUser),
+                        author_nama: currentUser.nama
+                    });
+                
+                if (error) throw error;
+
+                el('pengumuman-isi').value = ''; 
+                await loadPengumumanHistory(); 
+                await loadLatestAnnouncement(); 
+
+            } catch (err) {
+                if (errorEl) errorEl.textContent = `Gagal mengirim: ${err.message}. (Cek RLS?)`;
+            } finally {
+                el('pengumuman-submit-text').classList.remove('hidden');
+                el('pengumuman-submit-loader').classList.add('hidden');
+            }
+        }
+            
+        async function loadPengumumanHistory() {
+            const historyContainer = el('pengumuman-history');
+            historyContainer.innerHTML = '<div class="loader mx-auto"></div>';
+            try {
+                // [DIUBAH] Hanya ambil pengumuman 7 hari terakhir
+                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+                
+                const { data, error } = await supabaseClient
+                    .from('pengumuman')
+                    .select('*')
+                    .gte('created_at', sevenDaysAgo) // [BARU] Filter 7 hari
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+
+                if (data.length === 0) {
+                    historyContainer.innerHTML = '<p class="text-gray-400">Belum ada riwayat pengumuman (7 hari terakhir).</p>';
+                    return;
+                }
+                
+                historyContainer.innerHTML = data.map(item => `
+                    <div class="p-3 bg-gray-700/50 rounded-lg">
+                        <p>${item.isi}</p>
+                        <div class="flex justify-between items-center mt-2 text-xs text-gray-400">
+                            <span>Oleh: ${item.author_nama || 'Admin'}</span>
+                            <span>${new Date(item.created_at).toLocaleString('id-ID')}</span>
+                            <!-- [DIHAPUS] Tombol Hapus dihilangkan -->
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                console.error("Gagal memuat riwayat pengumuman:", err);
+                historyContainer.innerHTML = `<p class="text-red-400 p-4 text-center">Gagal memuat riwayat: ${err.message}. (PENTING: Pastikan RLS di tabel 'pengumuman' sudah OFF.)</p>`;
+            }
+        }
+        
+        /*
+         * [DIHAPUS] Fungsi hapus pengumuman sudah tidak diperlukan
+         */
+
+        /**
+         * [BARU] Logika Modal Hapus & Riwayat
+         */
+        function showConfirmRemoveModal(buttonEl) {
+            const { userid, nama } = buttonEl.dataset;
+            const tr = buttonEl.closest('tr');
+            tempRemoveTarget = tr; // Simpan <tr> untuk dihapus
+            el('confirm-remove-nama').textContent = nama;
+            el('confirm-remove-modal').classList.remove('hidden');
+        }
+        function closeConfirmRemoveModal() {
+            el('confirm-remove-modal').classList.add('hidden');
+            tempRemoveTarget = null;
+        }
+        async function showHistoryModal(buttonEl) {
+            const { userid, nama } = buttonEl.dataset;
+            el('history-nama').textContent = nama;
+            el('history-modal').classList.remove('hidden');
+            const contentEl = el('history-content');
+            contentEl.innerHTML = '<div class="flex justify-center items-center p-4"><div class="loader"></div><p class="ml-3">Memuat riwayat...</p></div>';
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('absensi')
+                    .select('tanggal, status, keterangan')
+                    .eq('user_id', userid)
+                    .order('tanggal', { ascending: false }); 
+                
+                if (error) throw error;
+
+                if (data.length === 0) {
+                    contentEl.innerHTML = '<p class="text-gray-400 text-center">Belum ada riwayat absensi untuk murid ini.</p>';
+                    return;
+                }
+
+                let historyHtml = '<table class="w-full text-left text-sm"><thead><tr class="border-b border-white/20"><th class="p-2">Tanggal</th><th class="p-2">Status</th><th class="p-2">Keterangan</th></tr></thead><tbody>';
+                data.forEach(rec => {
+                    historyHtml += `
+                        <tr class="border-b border-white/10">
+                            <td class="p-2">${rec.tanggal}</td>
+                            <td class="p-2"><span class="px-2 py-0.5 rounded ${getStatusColor(rec.status)} text-xs">${rec.status}</span></td>
+                            <td class="p-2 text-gray-300">${rec.keterangan || '-'}</td>
+                        </tr>
+                    `;
+                });
+                historyHtml += '</tbody></table>';
+                contentEl.innerHTML = historyHtml;
+
+            } catch (err) {
+                contentEl.innerHTML = `<p class="text-red-400 p-4 text-center">Gagal memuat riwayat: ${err.message}. (Cek RLS?)</p>`;
+            }
+        }
+        function closeHistoryModal() {
+            el('history-modal').classList.add('hidden');
+            el('history-content').innerHTML = '';
+            el('history-nama').textContent = '';
+        }
+
+        // --- Logic Login ---
+        async function handleLogin(e) {
+            e.preventDefault(); 
+            const role = el('role').value;
+            const username = el('username').value;
+            const password = el('password').value;
+            const errorEl = el('error-message');
+            errorEl.textContent = ''; 
+
+            let userFound = null;
+
+            try {
+                if (role === 'admin') {
+                    userFound = DATA.admin.find(u => u.id === 'admin01' && u.password === password);
+                    if (userFound) userFound.role = 'admin';
+                } else if (role === 'guru') {
+                    userFound = DATA.guru.find(u => u.nama === username && u.password === password);
+                    if (userFound) userFound.role = 'guru';
+                } else if (role === 'murid') {
+                    let found = false;
+                    for (const kelas of Object.keys(DATA.murid)) {
+                        const namaMurid = DATA.murid[kelas].find(nama => nama === username);
+                        if (namaMurid) {
+                            // [DIUBAH] Password murid diubah menjadi 'murid111'
+                            const passwordMurid = 'murid111';
+                            if (password === passwordMurid) {
+                                userFound = { nama: namaMurid, kelas: kelas, password: passwordMurid, role: 'murid' };
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (userFound) {
+                    currentUser = userFound;
+                    await showDashboard();
+                } else {
+                    errorEl.textContent = 'Peran, nama pengguna, atau password salah.';
+                }
+            } catch (err) {
+                console.error("Login error:", err);
+                errorEl.textContent = `Terjadi error: ${err.message}`;
+            }
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            el('dashboard-page').classList.add('hidden');
+            el('login-page').classList.remove('hidden');
+            el('password').value = ''; 
+            el('error-message').textContent = ''; 
+        }
+
+        // --- Event Listeners ---
+        window.onload = () => {
+            // Halaman Awal
+            el('start-btn').onclick = () => { el('welcome-page').classList.add('hidden'); el('login-page').classList.remove('hidden'); };
+            
+            // Halaman Login
+            el('login-form').onsubmit = handleLogin;
+            el('role').onchange = updateUsernameSelector;
+            el('toggle-password').onclick = () => {
+                const pass = el('password');
+                const isHidden = pass.type === 'password';
+                pass.type = isHidden ? 'text' : 'password';
+                el('eye-icon').classList.toggle('hidden', isHidden);
+                el('eye-off-icon').classList.toggle('hidden', !isHidden);
+            };
+            
+            // Halaman Dasbor
+            el('logout-btn').onclick = handleLogout;
+            el('current-date').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            // Modal Keterangan
+            el('modal-cancel').onclick = closeModal;
+            el('modal-submit-keterangan').onclick = () => {
+                tempAbsenData.keterangan = el('modal-keterangan').value;
+                submitAbsen();
+            };
+
+            // Modal Edit
+            el('modal-edit-cancel').onclick = closeEditModal;
+            el('modal-edit-submit').onclick = handleEditSubmit;
+
+            // Modal Konfirmasi Hapus
+            el('modal-remove-cancel').onclick = closeConfirmRemoveModal;
+            el('modal-remove-submit').onclick = () => {
+                if (tempRemoveTarget) {
+                    tempRemoveTarget.remove(); // Hapus baris dari DOM
+                }
+                closeConfirmRemoveModal();
+            };
+
+            // Modal Riwayat
+            el('modal-history-cancel').onclick = closeHistoryModal;
+
+            // Event listener untuk tombol dinamis (delegation)
+            el('app-container').addEventListener('click', (e) => {
+                // Tombol Edit
+                if (e.target.classList.contains('btn-edit') || e.target.closest('.btn-edit')) {
+                    showEditModal(e);
+                }
+                // Tombol Hapus User
+                if (e.target.classList.contains('btn-hapus')) {
+                    showConfirmRemoveModal(e.target);
+                }
+                // Tombol Riwayat
+                if (e.target.classList.contains('btn-history')) {
+                    showHistoryModal(e.target);
+                }
+                // Tombol Hapus Pengumuman sudah dihapus
+            });
+
+            // Init
+            updateUsernameSelector(); // Siapkan dropdown saat load
+        };
+    </script>
+</body>
+</html>
