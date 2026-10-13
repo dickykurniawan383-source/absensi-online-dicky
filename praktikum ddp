@@ -1,0 +1,69 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyN+tLcOOMwyXFt4jfuc0FDk",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/dickykurniawan383-source/absensi-online-dicky/blob/main/praktikum%20ddp\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 1,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "r3q6ndQVa0hF",
+        "outputId": "0ff2bfe0-9d19-486f-b738-e277d415b41f"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "list awal: \n",
+            "['mclaren540c', 'mobil', '2.993cc', 'merah', '4roda']\n",
+            "\n",
+            "list kendaraan setelah ditambahkan\n",
+            "kendaraan\n"
+          ]
+        }
+      ],
+      "source": [
+        "kendaraan = [\"mclaren540c\",\"mobil\",\"2.993cc\",\"merah\",\"4roda\"]\n",
+        "print(\"list awal: \")\n",
+        "print(kendaraan)\n",
+        "\n",
+        "#menambahkan harga dan tipe kendaraan di belakang\n",
+        "kendaraan.append(\"4,5 Miliar\")\n",
+        "kendaraan.append(\"540c\")\n",
+        "\n",
+        "#menambahkan merek kendaraan\n",
+        "kendaraan.insert(2, \"mclaren\")\n",
+        "\n",
+        "print(\"\\nlist kendaraan setelah ditambahkan\")\n",
+        "print(\"kendaraan\")"
+      ]
+    }
+  ]
+}
